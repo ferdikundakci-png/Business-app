@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Small Business Accounting & Stock - Net Worth Dashboard</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--main:#2563eb;--red:#dc2626;--green:#16a34a;--border:#e5e7eb;--amber:#d97706}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;padding:18px 14px;position:sticky;top:0;z-index:2}
+header h1{font-size:20px;margin:0 0 6px} header p{margin:0;font-size:13px;opacity:.9}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;background:#fff;position:sticky;top:82px;z-index:2;border-bottom:1px solid var(--border)}
+nav button,.btn{border:0;border-radius:12px;background:#e8efff;color:#1d4ed8;padding:10px 8px;font-weight:700;font-size:13px}
+nav button.active,.btn.primary{background:var(--main);color:#fff}.btn.red{background:#fee2e2;color:#991b1b}.btn.green{background:#dcfce7;color:#166534}.btn.gray{background:#f3f4f6;color:#374151}.btn.amber{background:#fef3c7;color:#92400e}
+main{padding:12px;max-width:1100px;margin:auto}.page{display:none}.page.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px #0000000d}
+h2{font-size:18px;margin:0 0 10px} h3{font-size:15px;margin:10px 0}.grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:850px){.grid.two{grid-template-columns:1fr 1fr}.grid.three{grid-template-columns:repeat(3,1fr)}.grid.four{grid-template-columns:repeat(4,1fr)}nav{grid-template-columns:repeat(10,1fr);top:74px}}
+label{font-size:12px;color:var(--muted);font-weight:700} input,select,textarea{width:100%;padding:11px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:16px}
+textarea{min-height:70px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.small{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid var(--border);padding:8px;text-align:left;vertical-align:top} th{color:var(--muted);font-size:12px}
+.kpi{padding:12px;border-radius:14px;background:#f8fafc;border:1px solid var(--border)}.kpi b{display:block;font-size:18px;margin-top:4px}.kpi.big b{font-size:24px}
+.badge{display:inline-block;border-radius:999px;padding:3px 8px;font-size:12px;background:#eef2ff;color:#3730a3}.danger{color:var(--red)}.ok{color:var(--green)}.amberText{color:var(--amber)}
+img.thumb{width:48px;height:48px;object-fit:cover;border-radius:10px;background:#f3f4f6}
+.invoiceBox{border:1px dashed var(--border);border-radius:14px;padding:10px;margin-top:8px}.right{text-align:right}
+.netCard{border:2px solid var(--border)}.netCard.positive{border-color:#86efac;background:#f0fdf4}.netCard.negative{border-color:#fca5a5;background:#fef2f2}
+canvas{width:100%;max-height:260px;border:1px solid var(--border);border-radius:14px;background:#fff;margin-top:8px}.warnBox{border-left:5px solid #d97706;background:#fffbeb}.editMark{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:8px;margin:6px 0;color:#92400e;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>Small Business Accounting & Stock</h1>
+  <p>Dashboard now shows Net Worth: Cash + Bank + Stock + Assets − Affirm/Debts.</p>
+</header>
+<nav id="tabs">
+<button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
+<button onclick="showPage('products',this)">Products</button>
+<button onclick="showPage('purchase',this)">Purchase</button>
+<button onclick="showPage('sale',this)">Sale</button>
+<button onclick="showPage('expenses',this)">Expenses</button>
+<button onclick="showPage('cashbank',this)">Cash/Bank</button>
+<button onclick="showPage('affirm',this)">Affirm</button>
+<button onclick="showPage('assets',this)">Assets/Tools</button>
+<button onclick="showPage('reports',this)">Reports</button>
+<button onclick="showPage('trash',this)">Trash</button>
+</nav>
+<main>
+<section id="dashboard" class="page active">
+ <div class="card netCard" id="netWorthCard"><h2>Business Net Worth / İşletme Net Değeri</h2>
+  <div class="grid four">
+   <div class="kpi big">Net Worth <b id="kNetWorth">$0.00</b><span class="small">Assets - Liabilities</span></div>
+   <div class="kpi">Total Assets <b id="kTotalAssets">$0.00</b><span class="small">Money + Stock + Tools</span></div>
+   <div class="kpi">Total Liabilities <b id="kTotalDebt">$0.00</b><span class="small">Affirm + extra fees</span></div>
+   <div class="kpi">If Sold at List Price <b id="kCloseValue">$0.00</b><span class="small">Sale value + assets - debt</span></div>
+  </div>
+  <div id="netExplanation" class="small" style="margin-top:8px"></div>
+ </div>
+ <div class="grid four">
+  <div class="kpi">Cash Register <b id="kCash">$0.00</b></div>
+  <div class="kpi">Bank Balance <b id="kBank">$0.00</b></div>
+  <div class="kpi">Card / Other <b id="kCard">$0.00</b></div>
+  <div class="kpi">Total Money <b id="kMoney">$0.00</b></div>
+ </div>
+ <div class="grid four">
+  <div class="kpi">Inventory Cost Value <b id="kStock">$0.00</b></div>
+  <div class="kpi">Inventory Sale Value <b id="kStockSale">$0.00</b></div>
+  <div class="kpi">Potential Stock Profit <b id="kPotential">$0.00</b></div>
+  <div class="kpi">Total Stock Qty <b id="kTotalQty">0</b></div>
+ </div>
+ <div class="grid four">
+  <div class="kpi">Assets / Tools Value <b id="kAssets">$0.00</b></div>
+  <div class="kpi">Affirm Principal <b id="kAffirmPrincipal">$0.00</b></div>
+  <div class="kpi">Affirm Extra / Interest <b id="kAffirmExtra">$0.00</b></div>
+  <div class="kpi">Affirm Total Balance <b id="kAffirm">$0.00</b></div>
+ </div>
+ <div class="grid three">
+  <div class="kpi">Sales Profit <b id="kProfit">$0.00</b></div>
+  <div class="kpi">Expenses <b id="kExpense">$0.00</b></div>
+  <div class="kpi">Net After Expenses <b id="kNetProfit">$0.00</b></div>
+ </div>
+ <div class="card warnBox"><h2>Low Stock Warning</h2><div id="lowStockBox"></div></div>
+ <div class="card"><h2>Profit & Sales Chart</h2><canvas id="profitChart" width="900" height="260"></canvas></div>
+ <div class="card"><h2>Today Summary</h2><div id="todaySummary"></div></div>
+ <div class="card"><h2>Backup / Restore</h2>
+  <p class="small">Your old <b>business-backup.json</b> will import here. First open this HTML, then press Import Backup and choose your JSON file.</p><p id="saveStatus" class="small"><b>Save status:</b> Ready</p>
+  <div class="row"><button class="btn green" onclick="save()">Save Now</button><button class="btn primary" onclick="exportData()">Export Backup</button><button class="btn gray" onclick="document.getElementById('importFile').click()">Import Backup</button><button class="btn red" onclick="resetAll()">Reset All</button></div>
+  <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(event)">
+ </div>
+</section>
+
+<section id="products" class="page">
+ <div class="card"><h2>Add / Update Product</h2>
+  <input type="hidden" id="pEdit">
+  <div class="grid two">
+   <div><label>Product Code / SKU</label><input id="pCode" placeholder="Example: CHAIR-BLACK-01"></div>
+   <div><label>Product Name</label><input id="pName" placeholder="Example: Dining Chair"></div>
+   <div><label>Category</label><input id="pCat" placeholder="Furniture, Electronics..."></div>
+   <div><label>Color / Variant</label><input id="pVariant" placeholder="Black, White, Large..."></div>
+   <div><label>Default Sale Price</label><input id="pSale" type="number" step="0.01"></div>
+   <div><label>Product Photo</label><input id="pPhoto" type="file" accept="image/*" onchange="loadPhoto(event)"></div>
+  </div>
+  <input type="hidden" id="pPhotoData">
+  <div class="row" style="margin-top:10px"><button class="btn primary" onclick="saveProduct()">Save Product</button><button class="btn gray" onclick="clearProductForm()">Clear</button></div>
+ </div>
+ <div class="card"><h2>Product List / Stock</h2><input id="productSearch" placeholder="Search product, code, category..." oninput="renderProducts()"><div style="overflow:auto"><table id="productsTable"></table></div></div>
+ <div class="card"><h2>Manual Stock Adjustment</h2>
+  <p class="small">Positive number adds stock, negative number removes stock. It will not allow negative stock.</p>
+  <div class="grid three"><div><label>Product</label><select id="adjProduct"></select></div><div><label>Qty Adjustment</label><input id="adjQty" type="number" step="1"></div><div><label>Reason</label><input id="adjReason"></div></div>
+  <button class="btn primary" style="margin-top:8px" onclick="saveAdjustment()">Save Stock Adjustment</button>
+ </div>
+ <div class="card"><h2>Stock Movement History</h2><div style="overflow:auto"><table id="stockHistory"></table></div></div>
+</section>
+
+<section id="purchase" class="page">
+ <div class="card"><h2>Purchase Invoice</h2><input type="hidden" id="purEdit"><div id="purEditNote"></div><p class="small">Automatic purchase invoice number: <b id="purchaseNo"></b></p>
+  <div class="grid two"><div><label>Supplier</label><input id="purSupplier"></div><div><label>Date</label><input id="purDate" type="date"></div><div><label>Payment Method</label><select id="purPay"><option>Cash</option><option>Bank</option><option>Card</option><option>Affirm Monthly</option><option>Unpaid / Supplier Credit</option></select></div><div><label>Account</label><select id="purAccount"><option>Cash</option><option>Bank</option><option>Card</option></select></div></div>
+  <div class="invoiceBox"><div class="grid three"><div><label>Product</label><select id="purProduct"></select></div><div><label>Qty</label><input id="purQty" type="number" step="1" value="1"></div><div><label>Cost Each</label><input id="purCost" type="number" step="0.01"></div></div><button class="btn green" style="margin-top:8px" onclick="addPurchaseLine()">Add Line</button></div>
+  <table id="purLines"></table>
+  <div class="row"><button class="btn primary" onclick="savePurchase()">Save Purchase Invoice</button><button class="btn gray" onclick="cancelPurchaseEdit()">Cancel Edit</button></div>
+ </div>
+ <div class="card"><h2>Purchase History</h2><div style="overflow:auto"><table id="purchaseHistory"></table></div></div>
+</section>
+
+<section id="sale" class="page">
+ <div class="card"><h2>Sales Invoice</h2><input type="hidden" id="saleEdit"><div id="saleEditNote"></div><p class="small">Automatic sales invoice number: <b id="saleNo"></b></p>
+  <div class="grid two"><div><label>Customer</label><input id="saleCustomer"></div><div><label>Date</label><input id="saleDate" type="date"></div><div><label>Payment Method</label><select id="salePay"><option>Cash</option><option>Bank</option><option>Card</option><option>Unpaid / Customer Owes</option></select></div><div><label>Account</label><select id="saleAccount"><option>Cash</option><option>Bank</option><option>Card</option></select></div></div>
+  <div class="invoiceBox"><div class="grid three"><div><label>Product</label><select id="saleProduct" onchange="fillSalePrice()"></select></div><div><label>Qty</label><input id="saleQty" type="number" step="1" value="1"></div><div><label>Sale Price Each</label><input id="salePrice" type="number" step="0.01"></div></div><button class="btn green" style="margin-top:8px" onclick="addSaleLine()">Add Line</button></div>
+  <table id="saleLines"></table>
+  <div class="row"><button class="btn primary" onclick="saveSale()">Save Sales Invoice</button><button class="btn gray" onclick="cancelSaleEdit()">Cancel Edit</button></div>
+ </div>
+ <div class="card"><h2>Sales History</h2><div style="overflow:auto"><table id="saleHistory"></table></div></div>
+</section>
+
+<section id="expenses" class="page">
+ <div class="card"><h2>Add / Edit Expense</h2><input type="hidden" id="exEdit"><div id="exEditNote"></div>
+  <div class="grid two"><div><label>Date</label><input id="exDate" type="date"></div><div><label>Category</label><select id="exCat"><option>Rent</option><option>Phone</option><option>Internet</option><option>Fuel</option><option>Utilities</option><option>Supplies</option><option>Tool</option><option>Equipment</option><option>Other</option></select></div><div><label>Amount</label><input id="exAmount" type="number" step="0.01"></div><div><label>Pay From</label><select id="exAccount"><option>Cash</option><option>Bank</option><option>Card</option></select></div><div><label>Note</label><input id="exNote"></div></div>
+  <div class="row"><button class="btn primary" onclick="saveExpense()">Save Expense</button><button class="btn gray" onclick="cancelExpenseEdit()">Cancel Edit</button></div>
+ </div>
+ <div class="card"><h2>Expense List</h2><div style="overflow:auto"><table id="expenseTable"></table></div></div>
+</section>
+
+<section id="cashbank" class="page">
+ <div class="grid three"><div class="kpi">Cash Register <b id="cbCash">$0.00</b></div><div class="kpi">Bank <b id="cbBank">$0.00</b></div><div class="kpi">Card / Other <b id="cbCard">$0.00</b></div></div>
+ <div class="card"><h2>Transfer Between Cash / Bank</h2>
+  <div class="grid three"><div><label>Date</label><input id="trDate" type="date"></div><div><label>From</label><select id="trFrom"><option>Cash</option><option>Bank</option><option>Card</option></select></div><div><label>To</label><select id="trTo"><option>Bank</option><option>Cash</option><option>Card</option></select></div><div><label>Amount</label><input id="trAmount" type="number" step="0.01"></div><div><label>Note</label><input id="trNote"></div></div>
+  <button class="btn primary" style="margin-top:8px" onclick="saveTransfer()">Save Transfer</button>
+ </div>
+ <div class="card"><h2>Cash / Bank Ledger</h2><div style="overflow:auto"><table id="ledgerTable"></table></div></div>
+</section>
+
+<section id="affirm" class="page">
+ <div class="grid four"><div class="kpi">Affirm Principal Balance <b id="afBalance">$0.00</b></div><div class="kpi">Extra / Interest Balance <b id="afExtra">$0.00</b></div><div class="kpi">Payments Paid <b id="afPaid">$0.00</b></div><div class="kpi">Open Affirm Purchases <b id="afOpen">0</b></div></div>
+ <div class="card"><h2>Pay Affirm Monthly Payment</h2>
+  <div class="grid three"><div><label>Affirm Purchase</label><select id="afLiability"></select></div><div><label>Date</label><input id="afDate" type="date"></div><div><label>Pay From</label><select id="afAccount"><option>Bank</option><option>Cash</option><option>Card</option></select></div><div><label>Amount</label><input id="afAmount" type="number" step="0.01"></div><div><label>Note</label><input id="afNote"></div></div>
+  <button class="btn primary" style="margin-top:8px" onclick="saveAffirmPayment()">Save Affirm Payment</button>
+ </div>
+ <div class="card"><h2>Add Affirm Extra Fee / Interest</h2>
+  <div class="grid three"><div><label>Affirm Purchase</label><select id="chLiability"></select></div><div><label>Date</label><input id="chDate" type="date"></div><div><label>Extra Amount</label><input id="chAmount" type="number" step="0.01"></div><div><label>Note</label><input id="chNote" placeholder="Interest / Extra fee"></div></div>
+  <button class="btn amber" style="margin-top:8px" onclick="saveAffirmCharge()">Save Extra Fee</button>
+ </div>
+ <div class="card"><h2>Affirm Purchases / Balance</h2><div style="overflow:auto"><table id="affirmTable"></table></div></div>
+ <div class="card"><h2>Affirm Extra Fees</h2><div style="overflow:auto"><table id="chargeTable"></table></div></div>
+</section>
+
+<section id="assets" class="page">
+ <div class="card"><h2>Add / Edit Asset / Demirbaş / Tools</h2><input type="hidden" id="asEdit"><div id="asEditNote"></div>
+  <p class="small">Tools/equipment are not sale stock and will not decrease when selling products.</p>
+  <div class="grid two"><div><label>Name</label><input id="asName"></div><div><label>Category</label><select id="asCat"><option>Tools</option><option>Equipment</option><option>Furniture</option><option>Electronics</option><option>Vehicle</option><option>Other</option></select></div><div><label>Date Bought</label><input id="asDate" type="date"></div><div><label>Cost / Value</label><input id="asCost" type="number" step="0.01"></div><div><label>Payment Method</label><select id="asPay"><option>Cash</option><option>Bank</option><option>Card</option><option>Affirm Monthly</option><option>Already Owned</option></select></div><div><label>Account</label><select id="asAccount"><option>Cash</option><option>Bank</option><option>Card</option></select></div><div><label>Note</label><input id="asNote"></div></div>
+  <div class="row" style="margin-top:8px"><button class="btn primary" onclick="saveAsset()">Save Asset / Tool</button><button class="btn gray" onclick="cancelAssetEdit()">Cancel Edit</button></div>
+ </div>
+ <div class="card"><h2>Asset / Tools List</h2><div style="overflow:auto"><table id="assetTable"></table></div></div>
+</section>
+
+<section id="reports" class="page">
+ <div class="card"><h2>Reports</h2>
+  <div class="grid three"><div><label>Start Date</label><input id="rStart" type="date"></div><div><label>End Date</label><input id="rEnd" type="date"></div><div><label>Product Filter</label><select id="rProduct"></select></div></div>
+  <button class="btn primary" style="margin-top:8px" onclick="renderReports()">Run Report</button>
+ </div>
+ <div class="grid four"><div class="kpi">Sales <b id="rSales">$0.00</b></div><div class="kpi">COGS <b id="rCogs">$0.00</b></div><div class="kpi">Expenses <b id="rExp">$0.00</b></div><div class="kpi">Net Profit <b id="rNet">$0.00</b></div></div>
+ <div class="card"><h2>Product Based Report</h2><div style="overflow:auto"><table id="productReport"></table></div><canvas id="productChart" width="900" height="260"></canvas></div>
+ <div class="card"><h2>Monthly Report</h2><div style="overflow:auto"><table id="monthlyReport"></table></div></div>
+</section>
+
+<section id="trash" class="page">
+ <div class="card"><h2>Trash / Deleted Records</h2><p class="small">Deleted sales, purchases, expenses, assets, and adjustments go here first. You can restore or permanently delete.</p><div style="overflow:auto"><table id="trashTable"></table></div></div>
+</section>
+</main>
+<script>
+const KEY='sb_accounting_stock_v1';
+const EMPTY_DB={products:[],purchases:[],sales:[],expenses:[],adjustments:[],transfers:[],affirmPayments:[],liabilities:[],assets:[],affirmCharges:[],trash:[],seq:{P:1,S:1,A:1}};
+let db=loadDB(), purTemp=[], saleTemp=[];
+
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function normalize(x){
+ x=x||{}; for(let k of Object.keys(EMPTY_DB)){if(k==='seq')continue; if(!Array.isArray(x[k]))x[k]=[]}
+ x.seq=x.seq||{}; x.seq.P=x.seq.P||1; x.seq.S=x.seq.S||1; x.seq.A=x.seq.A||1;
+ x.affirmCharges=x.affirmCharges||[]; x.trash=x.trash||[];
+ return x;
+}
+function loadDB(){try{let raw=localStorage.getItem(KEY); return raw?normalize(JSON.parse(raw)):clone(EMPTY_DB)}catch(e){alert('Saved data could not be read. Please import backup.'); return clone(EMPTY_DB)}}
+function save(){try{const data=JSON.stringify(db);localStorage.setItem(KEY,data);if(localStorage.getItem(KEY)!==data)throw new Error('check failed');setStatus('Saved on this phone/browser ✓')}catch(e){setStatus('NOT SAVED — storage full or browser blocked storage. Export Backup now.',true);alert('WARNING: Data was NOT saved. Export Backup now. Photos may be too large.')}renderAll()}
+window.addEventListener('beforeunload',()=>{try{localStorage.setItem(KEY, JSON.stringify(db));}catch(e){}});
+function setStatus(msg,bad=false){let el=document.getElementById('saveStatus');if(el){el.innerHTML='<b>Save status:</b> '+msg;el.className=bad?'small danger':'small ok'}}
+function money(n){let v=Number(n)||0; return '$'+v.toFixed(2)}
+function today(){return new Date().toISOString().slice(0,10)}
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function showPage(p,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');renderAll()}
+function getProduct(pid){return db.products.find(p=>p.id===pid)}
+function productName(pid){let p=getProduct(pid);return p?(p.code+' '+p.name+' '+(p.variant||'')):'Deleted product'}
+function stockOf(pid){let q=0;db.purchases.forEach(inv=>(inv.lines||[]).forEach(l=>{if(l.pid===pid)q+=Number(l.qty)||0}));db.sales.forEach(inv=>(inv.lines||[]).forEach(l=>{if(l.pid===pid)q-=Number(l.qty)||0}));(db.adjustments||[]).forEach(a=>{if(a.pid===pid)q+=Number(a.qty)||0});return q}
+function avgCost(pid){let q=0,t=0;db.purchases.forEach(inv=>(inv.lines||[]).forEach(l=>{if(l.pid===pid){q+=Number(l.qty)||0;t+=(Number(l.qty)||0)*(Number(l.cost)||0)}}));return q?t/q:0}
+function salePrice(pid){let p=getProduct(pid);return Number(p?.sale)||0}
+function liabilityPaid(lid){return (db.affirmPayments||[]).filter(p=>p.lid===lid).reduce((a,p)=>a+(Number(p.amount)||0),0)}
+function liabilityCharges(lid){return (db.affirmCharges||[]).filter(c=>c.lid===lid).reduce((a,c)=>a+(Number(c.amount)||0),0)}
+function liabilityBalance(l){return Math.max(0,(Number(l.amount)||0)+liabilityCharges(l.id)-liabilityPaid(l.id))}
+function metrics(){
+ let b=accountBalances();
+ let stockCost=0,stockSale=0,totalQty=0;
+ db.products.forEach(p=>{let q=stockOf(p.id); if(q>0){totalQty+=q; stockCost+=q*avgCost(p.id); stockSale+=q*(Number(p.sale)||0)}})
+ let assets=(db.assets||[]).reduce((a,x)=>a+(Number(x.cost)||0),0);
+ let principal=(db.liabilities||[]).reduce((a,l)=>a+Math.max(0,(Number(l.amount)||0)-Math.min((Number(l.amount)||0),liabilityPaid(l.id))),0);
+ let extra=(db.liabilities||[]).reduce((a,l)=>a+Math.max(0,liabilityCharges(l.id)-Math.max(0,liabilityPaid(l.id)-(Number(l.amount)||0))),0);
+ let debt=(db.liabilities||[]).reduce((a,l)=>a+liabilityBalance(l),0);
+ let moneyTotal=(b.Cash||0)+(b.Bank||0)+(b.Card||0);
+ let totalAssets=moneyTotal+stockCost+assets;
+ let netWorth=totalAssets-debt;
+ let closeValue=moneyTotal+stockSale+assets-debt;
+ let salesProfit=db.sales.reduce((a,inv)=>a+(inv.lines||[]).reduce((b,l)=>b+(Number(l.qty)||0)*((Number(l.price)||0)-(Number(l.cost)||0)),0),0);
+ let exp=db.expenses.reduce((a,e)=>a+(Number(e.amount)||0),0);
+ return {b,stockCost,stockSale,totalQty,assets,principal,extra,debt,moneyTotal,totalAssets,netWorth,closeValue,salesProfit,exp,potential:stockSale-stockCost}
+}
+function loadPhoto(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{let img=new Image();img.onload=()=>{let max=700,w=img.width,h=img.height;if(w>h&&w>max){h=Math.round(h*max/w);w=max}else if(h>=w&&h>max){w=Math.round(w*max/h);h=max}let c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);pPhotoData.value=c.toDataURL('image/jpeg',0.65);setStatus('Photo compressed. Press Save Product.')};img.onerror=()=>{pPhotoData.value=r.result};img.src=r.result};r.readAsDataURL(f)}
+
+function saveProduct(){let code=pCode.value.trim(),name=pName.value.trim();if(!code||!name){alert('Product code and name required');return}let edit=pEdit.value,dupe=db.products.find(p=>p.code===code&&p.id!==edit);if(dupe){alert('This product code already exists. Use different SKU for different color.');return}let obj={id:edit||id(),code,name,cat:pCat.value.trim(),variant:pVariant.value.trim(),sale:Number(pSale.value)||0,photo:pPhotoData.value||''};if(edit){let i=db.products.findIndex(p=>p.id===edit);db.products[i]={...db.products[i],...obj,photo:obj.photo||db.products[i].photo}}else db.products.push(obj);clearProductForm();save()}
+function clearProductForm(){['pEdit','pCode','pName','pCat','pVariant','pSale','pPhotoData'].forEach(x=>document.getElementById(x).value='');pPhoto.value=''}
+function editProduct(pid){let p=getProduct(pid);if(!p)return;pEdit.value=p.id;pCode.value=p.code;pName.value=p.name;pCat.value=p.cat||'';pVariant.value=p.variant||'';pSale.value=p.sale||'';pPhotoData.value=p.photo||'';showPage('products',document.querySelectorAll('nav button')[1]);scrollTo(0,0)}
+function deleteProduct(pid){if(stockOf(pid)!==0){alert('Stock is not zero. You cannot delete this product.');return} if(confirm('Delete product?')){trashPush('products',db.products.find(p=>p.id===pid));db.products=db.products.filter(p=>p.id!==pid);save()}}
+function productOptions(sel,all=false){if(!sel)return;let opts=all?'<option value="">All Products</option>':'';db.products.forEach(p=>opts+=`<option value="${p.id}">${p.code} - ${p.name} ${p.variant||''} (Stock: ${stockOf(p.id)})</option>`);sel.innerHTML=opts}
+function renderProducts(){let q=(productSearch?.value||'').toLowerCase();let rows='<tr><th>Photo</th><th>Code</th><th>Name</th><th>Category</th><th>Stock</th><th>Avg Cost</th><th>Cost Value</th><th>Sale Value</th><th>Action</th></tr>';db.products.filter(p=>(p.code+p.name+(p.cat||'')+(p.variant||'')).toLowerCase().includes(q)).forEach(p=>{let st=stockOf(p.id),ac=avgCost(p.id),sv=st*(Number(p.sale)||0);rows+=`<tr><td>${p.photo?`<img class="thumb" src="${p.photo}">`:''}</td><td><b>${p.code}</b></td><td>${p.name}<br><span class="small">${p.variant||''}</span></td><td>${p.cat||''}</td><td class="${st<1?'danger':'ok'}">${st}</td><td>${money(ac)}</td><td>${money(st*ac)}</td><td>${money(sv)}</td><td><button class="btn gray" onclick="editProduct('${p.id}')">Edit</button> <button class="btn red" onclick="deleteProduct('${p.id}')">Delete</button></td></tr>`});productsTable.innerHTML=rows}
+
+function addPurchaseLine(){if(!purProduct.value)return;purTemp.push({pid:purProduct.value,qty:Number(purQty.value)||1,cost:Number(purCost.value)||0});renderPurLines()}
+function renderPurLines(){let s='<tr><th>Product</th><th>Qty</th><th>Cost</th><th>Total</th><th></th></tr>';purTemp.forEach((l,i)=>s+=`<tr><td>${productName(l.pid)}</td><td>${l.qty}</td><td>${money(l.cost)}</td><td>${money(l.qty*l.cost)}</td><td><button class="btn red" onclick="purTemp.splice(${i},1);renderPurLines()">X</button></td></tr>`);purLines.innerHTML=s}
+function savePurchase(){if(!purTemp.length){alert('Add product line first');return}let total=purTemp.reduce((a,l)=>a+l.qty*l.cost,0),edit=purEdit.value,oldInv=db.purchases.find(x=>x.id===edit),no=oldInv?oldInv.no:'P-'+String(db.seq.P++).padStart(5,'0'),inv={id:edit||id(),no,supplier:purSupplier.value,date:purDate.value||today(),payment:purPay.value,account:purAccount.value,lines:purTemp};if(edit){db.purchases=db.purchases.map(x=>x.id===edit?inv:x);db.liabilities=(db.liabilities||[]).filter(x=>x.ref!==edit)}else db.purchases.push(inv);if(purPay.value==='Affirm Monthly')db.liabilities.push({id:id(),date:inv.date,source:'purchase',ref:inv.id,no:inv.no,name:'Affirm '+inv.no+' '+(inv.supplier||''),amount:total});cancelPurchaseEdit();save()}
+
+function fillSalePrice(){
+ let pid=saleProduct.value;
+ let current=Number(salePrice.value)||0;
+ // When product changes, fill the field from the product default only if the field is empty.
+ // The number typed by the user must always win.
+ if(pid && current<=0) salePrice.value=salePriceDefault(pid)||'';
+}
+function addSaleLine(){
+ if(!saleProduct.value){alert('Select product first');return false}
+ let pid=saleProduct.value;
+ let q=Number(saleQty.value)||0;
+ let typedPrice=Number(salePrice.value);
+ if(q<=0){alert('Qty must be more than 0');return false}
+ if(!isFinite(typedPrice) || typedPrice<=0){alert('Sale Price Each must be more than 0');return false}
+ let already=saleTemp.filter(x=>x.pid===pid).reduce((a,x)=>a+(Number(x.qty)||0),0);
+ if(q+already>stockOf(pid)){alert('Not enough stock. Current stock: '+stockOf(pid));return false}
+ // IMPORTANT: use the price typed in the Sale screen, not the product default/list price.
+ saleTemp.push({pid,qty:q,price:typedPrice,cost:avgCost(pid)});
+ renderSaleLines();
+ return true;
+}
+function salePriceDefault(pid){return Number(getProduct(pid)?.sale)||0}
+function renderSaleLines(){let s='<tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr>';saleTemp.forEach((l,i)=>s+=`<tr><td>${productName(l.pid)}</td><td>${l.qty}</td><td>${money(l.price)}</td><td>${money(l.qty*l.price)}</td><td><button class="btn red" onclick="saleTemp.splice(${i},1);renderSaleLines()">X</button></td></tr>`);saleLines.innerHTML=s}
+function saveSale(){
+ // If user filled the sale form but forgot Add Line, add it automatically.
+ if(!saleTemp.length && saleProduct.value && Number(saleQty.value)>0 && Number(salePrice.value)>0){
+   if(!addSaleLine()) return;
+ }
+ if(!saleTemp.length){alert('Add product line first');return}
+ let edit=saleEdit.value,oldInv=db.sales.find(x=>x.id===edit),no=oldInv?oldInv.no:'S-'+String(db.seq.S++).padStart(5,'0'),inv={id:edit||id(),no,customer:saleCustomer.value,date:saleDate.value||today(),payment:salePay.value,account:saleAccount.value,lines:saleTemp};
+ if(edit)db.sales=db.sales.map(x=>x.id===edit?inv:x);else db.sales.push(inv);
+ cancelSaleEdit();save()
+}
+function saveExpense(){if(!exAmount.value){alert('Amount required');return}let rec={id:exEdit.value||id(),date:exDate.value||today(),cat:exCat.value,amount:Number(exAmount.value)||0,account:exAccount.value,note:exNote.value};if(exEdit.value)db.expenses=db.expenses.map(x=>x.id===exEdit.value?rec:x);else db.expenses.push(rec);cancelExpenseEdit();save()}
+
+function trashPush(type,record){if(!record)return;db.trash=db.trash||[];db.trash.push({id:id(),deletedAt:new Date().toLocaleString(),type,record:clone(record)})}
+function del(type,iid){let arr=db[type]||[], rec=arr.find(x=>x.id===iid);if(confirm('Delete this record? It will move to Trash.')){trashPush(type,rec);db[type]=arr.filter(x=>x.id!==iid); if(type==='purchases'||type==='assets')db.liabilities=(db.liabilities||[]).filter(x=>x.ref!==iid); save()}}
+function restoreTrash(tid){let t=db.trash.find(x=>x.id===tid);if(!t)return;if(!db[t.type])db[t.type]=[];db[t.type].push(t.record);db.trash=db.trash.filter(x=>x.id!==tid);save()}
+function deleteTrash(tid){if(confirm('Permanently delete from trash?')){db.trash=db.trash.filter(x=>x.id!==tid);save()}}
+
+function saveAdjustment(){let pid=adjProduct.value,qty=Number(adjQty.value)||0,reason=adjReason.value.trim();if(!pid){alert('Select product first');return}if(qty===0){alert('Qty cannot be 0');return}let current=stockOf(pid);if(current+qty<0){alert('This would make stock negative. Current: '+current);return}if(confirm('New stock will be '+(current+qty)+'. Continue?')){db.adjustments.push({id:id(),date:today(),pid,qty,reason});adjQty.value='';adjReason.value='';save()}}
+function deleteAdjustment(iid){let rec=db.adjustments.find(x=>x.id===iid);if(confirm('Delete this stock adjustment?')){trashPush('adjustments',rec);db.adjustments=db.adjustments.filter(x=>x.id!==iid);save()}}
+function renderStockHistory(){let moves=[];db.purchases.forEach(inv=>(inv.lines||[]).forEach(l=>moves.push({date:inv.date,type:'Purchase '+inv.no,product:productName(l.pid),qty:Number(l.qty),note:inv.supplier||'',id:null})));db.sales.forEach(inv=>(inv.lines||[]).forEach(l=>moves.push({date:inv.date,type:'Sale '+inv.no,product:productName(l.pid),qty:-Number(l.qty),note:inv.customer||'',id:null})));db.adjustments.forEach(a=>moves.push({date:a.date,type:'Manual Adjustment',product:productName(a.pid),qty:Number(a.qty),note:a.reason||'',id:a.id}));moves.sort((a,b)=>(b.date||'').localeCompare(a.date||''));stockHistory.innerHTML='<tr><th>Date</th><th>Type</th><th>Product</th><th>Qty</th><th>Note</th><th></th></tr>'+moves.map(m=>`<tr><td>${m.date}</td><td>${m.type}</td><td>${m.product}</td><td class="${m.qty<0?'danger':'ok'}">${m.qty>0?'+':''}${m.qty}</td><td>${m.note}</td><td>${m.id?`<button class="btn red" onclick="deleteAdjustment('${m.id}')">Delete</button>`:''}</td></tr>`).join('')}
+
+function ledgerItems(){let items=[];db.sales.forEach(inv=>{let total=(inv.lines||[]).reduce((a,l)=>a+l.qty*l.price,0);if(inv.payment&&inv.payment.startsWith('Unpaid'))return;items.push({date:inv.date,account:inv.account||inv.payment||'Cash',type:'Sale',desc:inv.no+' '+(inv.customer||''),amount:total})});db.purchases.forEach(inv=>{let total=(inv.lines||[]).reduce((a,l)=>a+l.qty*l.cost,0);if(inv.payment==='Affirm Monthly'||(inv.payment&&inv.payment.startsWith('Unpaid')))return;items.push({date:inv.date,account:inv.account||inv.payment||'Cash',type:'Purchase',desc:inv.no+' '+(inv.supplier||''),amount:-total})});db.expenses.forEach(e=>items.push({date:e.date,account:e.account||'Cash',type:'Expense',desc:e.cat+' '+(e.note||''),amount:-Number(e.amount)}));db.assets.forEach(a=>{if(a.payment==='Affirm Monthly'||a.payment==='Already Owned')return;items.push({date:a.date,account:a.account||a.payment||'Cash',type:'Asset/Tool',desc:a.no+' '+a.name,amount:-Number(a.cost)})});db.affirmPayments.forEach(p=>items.push({date:p.date,account:p.account||'Bank',type:'Affirm Payment',desc:p.note||'Monthly payment',amount:-Number(p.amount)}));db.transfers.forEach(t=>{items.push({date:t.date,account:t.from,type:'Transfer Out',desc:t.note||'',amount:-Number(t.amount)});items.push({date:t.date,account:t.to,type:'Transfer In',desc:t.note||'',amount:Number(t.amount)})});return items}
+function accountBalances(){let b={Cash:0,Bank:0,Card:0};ledgerItems().forEach(x=>{if(b[x.account]===undefined)b[x.account]=0;b[x.account]+=Number(x.amount)||0});return b}
+function saveTransfer(){let amt=Number(trAmount.value)||0;if(!amt){alert('Amount required');return}if(trFrom.value===trTo.value){alert('From and To cannot be same');return}db.transfers.push({id:id(),date:trDate.value||today(),from:trFrom.value,to:trTo.value,amount:amt,note:trNote.value});trAmount.value='';trNote.value='';trDate.value=today();save()}
+function renderCashBank(){let b=accountBalances();cbCash.innerText=money(b.Cash);cbBank.innerText=money(b.Bank);cbCard.innerText=money(b.Card);let rows='<tr><th>Date</th><th>Account</th><th>Type</th><th>Description</th><th>Amount</th></tr>';ledgerItems().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).forEach(x=>rows+=`<tr><td>${x.date}</td><td>${x.account}</td><td>${x.type}</td><td>${x.desc}</td><td class="${x.amount<0?'danger':'ok'}">${money(x.amount)}</td></tr>`);ledgerTable.innerHTML=rows}
+
+function renderAffirmOptions(){let opts='';db.liabilities.filter(l=>liabilityBalance(l)>0).forEach(l=>opts+=`<option value="${l.id}">${l.name} - Balance ${money(liabilityBalance(l))}</option>`);afLiability.innerHTML=opts||'<option value="">No open Affirm balance</option>';chLiability.innerHTML=opts||'<option value="">No open Affirm balance</option>'}
+function saveAffirmPayment(){let lid=afLiability.value,amt=Number(afAmount.value)||0;if(!lid){alert('Select Affirm purchase');return}let l=db.liabilities.find(x=>x.id===lid);if(!l)return;if(!amt){alert('Amount required');return}if(amt>liabilityBalance(l)&&!confirm('Payment is more than remaining balance. Continue?'))return;db.affirmPayments.push({id:id(),lid,date:afDate.value||today(),account:afAccount.value,amount:amt,note:afNote.value||l.name});afAmount.value='';afNote.value='';afDate.value=today();save()}
+function saveAffirmCharge(){let lid=chLiability.value,amt=Number(chAmount.value)||0;if(!lid){alert('Select Affirm purchase');return}if(!amt){alert('Amount required');return}db.affirmCharges.push({id:id(),lid,date:chDate.value||today(),amount:amt,note:chNote.value||'Interest / Extra fee'});chAmount.value='';chNote.value='';chDate.value=today();save()}
+function deleteCharge(iid){if(confirm('Delete this Affirm extra fee?')){db.affirmCharges=db.affirmCharges.filter(x=>x.id!==iid);save()}}
+function renderAffirm(){renderAffirmOptions();let paid=db.affirmPayments.reduce((a,p)=>a+Number(p.amount),0),principal=db.liabilities.reduce((a,l)=>a+Math.max(0,(Number(l.amount)||0)-Math.min((Number(l.amount)||0),liabilityPaid(l.id))),0),extra=db.liabilities.reduce((a,l)=>a+Math.max(0,liabilityCharges(l.id)-Math.max(0,liabilityPaid(l.id)-(Number(l.amount)||0))),0);afBalance.innerText=money(principal);afExtra.innerText=money(extra);afPaid.innerText=money(paid);afOpen.innerText=db.liabilities.filter(l=>liabilityBalance(l)>0).length;affirmTable.innerHTML='<tr><th>Date</th><th>Name</th><th>Principal</th><th>Extra</th><th>Paid</th><th>Balance</th></tr>'+db.liabilities.map(l=>`<tr><td>${l.date||''}</td><td>${l.name}</td><td>${money(l.amount)}</td><td>${money(liabilityCharges(l.id))}</td><td>${money(liabilityPaid(l.id))}</td><td class="${liabilityBalance(l)>0?'danger':'ok'}">${money(liabilityBalance(l))}</td></tr>`).join('');chargeTable.innerHTML='<tr><th>Date</th><th>Affirm</th><th>Amount</th><th>Note</th><th></th></tr>'+db.affirmCharges.map(c=>{let l=db.liabilities.find(x=>x.id===c.lid);return `<tr><td>${c.date}</td><td>${l?l.name:''}</td><td>${money(c.amount)}</td><td>${c.note||''}</td><td><button class="btn red" onclick="deleteCharge('${c.id}')">Delete</button></td></tr>`}).join('')}
+
+function saveAsset(){let name=asName.value.trim(),cost=Number(asCost.value)||0;if(!name){alert('Asset/tool name required');return}let edit=asEdit.value,oldA=db.assets.find(x=>x.id===edit),no=oldA?oldA.no:'A-'+String(db.seq.A++).padStart(5,'0'),a={id:edit||id(),no,name,cat:asCat.value,date:asDate.value||today(),cost,payment:asPay.value,account:asAccount.value,note:asNote.value};if(edit){db.assets=db.assets.map(x=>x.id===edit?a:x);db.liabilities=(db.liabilities||[]).filter(x=>x.ref!==edit)}else db.assets.push(a);if(asPay.value==='Affirm Monthly')db.liabilities.push({id:id(),date:a.date,source:'asset',ref:a.id,no:a.no,name:'Affirm '+a.no+' '+a.name,amount:cost});cancelAssetEdit();save()}
+function renderAssets(){assetTable.innerHTML='<tr><th>No</th><th>Date</th><th>Name</th><th>Category</th><th>Value</th><th>Payment</th><th>Note</th><th></th></tr>'+db.assets.map(a=>`<tr><td>${a.no||''}</td><td>${a.date||''}</td><td>${a.name}</td><td>${a.cat||''}</td><td>${money(a.cost)}</td><td>${a.payment||''}</td><td>${a.note||''}</td><td><button class="btn gray" onclick="editAsset('${a.id}')">Edit</button> <button class="btn red" onclick="del('assets','${a.id}')">Delete</button></td></tr>`).join('')}
+
+function between(d,s,e){return (!s||d>=s)&&(!e||d<=e)}
+function renderReports(){let s=rStart.value,e=rEnd.value,pid=rProduct.value,sales=0,cogs=0,exp=0,prod={},monthly={};db.sales.forEach(inv=>{if(!between(inv.date,s,e))return;let m=(inv.date||'').slice(0,7);monthly[m]=monthly[m]||{sales:0,cogs:0,exp:0};(inv.lines||[]).forEach(l=>{if(pid&&l.pid!==pid)return;let rev=l.qty*l.price,cg=l.qty*l.cost;sales+=rev;cogs+=cg;monthly[m].sales+=rev;monthly[m].cogs+=cg;prod[l.pid]=prod[l.pid]||{name:productName(l.pid),qty:0,sales:0,cogs:0};prod[l.pid].qty+=l.qty;prod[l.pid].sales+=rev;prod[l.pid].cogs+=cg})});db.expenses.forEach(x=>{if(between(x.date,s,e)){exp+=Number(x.amount)||0;let m=(x.date||'').slice(0,7);monthly[m]=monthly[m]||{sales:0,cogs:0,exp:0};monthly[m].exp+=Number(x.amount)||0}});rSales.innerText=money(sales);rCogs.innerText=money(cogs);rExp.innerText=money(exp);rNet.innerText=money(sales-cogs-exp);productReport.innerHTML='<tr><th>Product</th><th>Sold Qty</th><th>Sales</th><th>COGS</th><th>Profit</th></tr>'+Object.values(prod).map(x=>`<tr><td>${x.name}</td><td>${x.qty}</td><td>${money(x.sales)}</td><td>${money(x.cogs)}</td><td>${money(x.sales-x.cogs)}</td></tr>`).join('');let pv=Object.values(prod).slice(0,8);drawSimpleChart('productChart',pv.map(x=>x.name),pv.map(x=>x.sales-x.cogs));monthlyReport.innerHTML='<tr><th>Month</th><th>Sales</th><th>COGS</th><th>Expenses</th><th>Net</th></tr>'+Object.keys(monthly).sort().map(m=>{let x=monthly[m];return `<tr><td>${m}</td><td>${money(x.sales)}</td><td>${money(x.cogs)}</td><td>${money(x.exp)}</td><td>${money(x.sales-x.cogs-x.exp)}</td></tr>`}).join('')}
+
+
+function cancelPurchaseEdit(){purEdit.value='';purEditNote.innerHTML='';purTemp=[];purSupplier.value='';purDate.value=today();renderPurLines();}
+function editPurchase(iid){let inv=db.purchases.find(x=>x.id===iid);if(!inv)return;purEdit.value=iid;purEditNote.innerHTML='<div class="editMark">Editing '+inv.no+'</div>';purSupplier.value=inv.supplier||'';purDate.value=inv.date||today();purPay.value=inv.payment||'Cash';purAccount.value=inv.account||'Cash';purTemp=clone(inv.lines||[]);renderPurLines();showPage('purchase',document.querySelectorAll('nav button')[2]);scrollTo(0,0)}
+function cancelSaleEdit(){saleEdit.value='';saleEditNote.innerHTML='';saleTemp=[];saleCustomer.value='';saleDate.value=today();renderSaleLines();}
+function editSale(iid){let inv=db.sales.find(x=>x.id===iid);if(!inv)return;saleEdit.value=iid;saleEditNote.innerHTML='<div class="editMark">Editing '+inv.no+'</div>';saleCustomer.value=inv.customer||'';saleDate.value=inv.date||today();salePay.value=inv.payment||'Cash';saleAccount.value=inv.account||'Cash';saleTemp=clone(inv.lines||[]);renderSaleLines();showPage('sale',document.querySelectorAll('nav button')[3]);scrollTo(0,0)}
+function cancelExpenseEdit(){exEdit.value='';exEditNote.innerHTML='';exAmount.value='';exNote.value='';exDate.value=today();}
+function editExpense(iid){let e=db.expenses.find(x=>x.id===iid);if(!e)return;exEdit.value=iid;exEditNote.innerHTML='<div class="editMark">Editing expense</div>';exDate.value=e.date||today();exCat.value=e.cat||'Other';exAmount.value=e.amount||'';exAccount.value=e.account||'Cash';exNote.value=e.note||'';showPage('expenses',document.querySelectorAll('nav button')[4]);scrollTo(0,0)}
+function cancelAssetEdit(){asEdit.value='';asEditNote.innerHTML='';asName.value='';asCost.value='';asNote.value='';asDate.value=today();}
+function editAsset(iid){let a=db.assets.find(x=>x.id===iid);if(!a)return;asEdit.value=iid;asEditNote.innerHTML='<div class="editMark">Editing '+(a.no||'asset')+'</div>';asName.value=a.name||'';asCat.value=a.cat||'Other';asDate.value=a.date||today();asCost.value=a.cost||'';asPay.value=a.payment||'Cash';asAccount.value=a.account||'Cash';asNote.value=a.note||'';showPage('assets',document.querySelectorAll('nav button')[7]);scrollTo(0,0)}
+function drawSimpleChart(canvasId, labels, values){let c=document.getElementById(canvasId);if(!c)return;let ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);ctx.font='13px Arial';ctx.fillText('No data',20,30);if(!values.length)return;ctx.clearRect(0,0,w,h);let max=Math.max(...values.map(v=>Math.abs(v)),1),barW=Math.max(18,(w-80)/values.length-8),base=h-45;ctx.beginPath();ctx.moveTo(45,15);ctx.lineTo(45,base);ctx.lineTo(w-15,base);ctx.stroke();values.forEach((v,i)=>{let x=55+i*(barW+8),bh=Math.min(base-25,Math.abs(v)/max*(base-35));ctx.fillRect(x,base-bh,barW,bh);ctx.fillText('$'+Number(v).toFixed(0),x,base-bh-5);ctx.save();ctx.translate(x,base+12);ctx.rotate(-0.5);ctx.fillText(String(labels[i]).slice(0,12),0,0);ctx.restore();});}
+function renderCharts(){let monthly={};db.sales.forEach(inv=>{let m=(inv.date||'').slice(0,7)||'No date';monthly[m]=monthly[m]||{sales:0,profit:0};(inv.lines||[]).forEach(l=>{monthly[m].sales+=Number(l.qty)*Number(l.price);monthly[m].profit+=Number(l.qty)*(Number(l.price)-Number(l.cost));})});let labs=Object.keys(monthly).sort().slice(-8);drawSimpleChart('profitChart',labs,labs.map(m=>monthly[m].profit));}
+function renderLowStock(){let lows=db.products.map(p=>({p,qty:stockOf(p.id)})).filter(x=>x.qty<=1);lowStockBox.innerHTML=lows.length?lows.map(x=>`<p><b>${x.p.code}</b> ${x.p.name} ${x.p.variant||''}: <span class="danger">${x.qty}</span></p>`).join(''):'<p class="ok"><b>No low stock.</b></p>';}
+function renderHistory(){purchaseHistory.innerHTML='<tr><th>No</th><th>Date</th><th>Supplier</th><th>Payment</th><th>Total</th><th></th></tr>'+db.purchases.slice().reverse().map(inv=>`<tr><td>${inv.no}</td><td>${inv.date}</td><td>${inv.supplier||''}</td><td>${inv.payment||''}</td><td>${money((inv.lines||[]).reduce((a,l)=>a+l.qty*l.cost,0))}</td><td><button class="btn gray" onclick="editPurchase('${inv.id}')">Edit</button> <button class="btn red" onclick="del('purchases','${inv.id}')">Delete</button></td></tr>`).join('');saleHistory.innerHTML='<tr><th>No</th><th>Date</th><th>Customer</th><th>Payment</th><th>Total</th><th>Profit</th><th></th></tr>'+db.sales.slice().reverse().map(inv=>`<tr><td>${inv.no}</td><td>${inv.date}</td><td>${inv.customer||''}</td><td>${inv.payment||''}</td><td>${money((inv.lines||[]).reduce((a,l)=>a+l.qty*l.price,0))}</td><td>${money((inv.lines||[]).reduce((a,l)=>a+l.qty*(l.price-l.cost),0))}</td><td><button class="btn gray" onclick="editSale('${inv.id}')">Edit</button> <button class="btn red" onclick="del('sales','${inv.id}')">Delete</button></td></tr>`).join('');expenseTable.innerHTML='<tr><th>Date</th><th>Category</th><th>Amount</th><th>Account</th><th>Note</th><th></th></tr>'+db.expenses.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.cat}</td><td>${money(e.amount)}</td><td>${e.account||''}</td><td>${e.note||''}</td><td><button class="btn gray" onclick="editExpense('${e.id}')">Edit</button> <button class="btn red" onclick="del('expenses','${e.id}')">Delete</button></td></tr>`).join('')}
+
+function renderDashboard(){let m=metrics();kCash.innerText=money(m.b.Cash);kBank.innerText=money(m.b.Bank);kCard.innerText=money(m.b.Card);kMoney.innerText=money(m.moneyTotal);kStock.innerText=money(m.stockCost);kStockSale.innerText=money(m.stockSale);kPotential.innerText=money(m.potential);kTotalQty.innerText=m.totalQty;kAssets.innerText=money(m.assets);kAffirmPrincipal.innerText=money(m.principal);kAffirmExtra.innerText=money(m.extra);kAffirm.innerText=money(m.debt);kProfit.innerText=money(m.salesProfit);kExpense.innerText=money(m.exp);kNetProfit.innerText=money(m.salesProfit-m.exp);kTotalAssets.innerText=money(m.totalAssets);kTotalDebt.innerText=money(m.debt);kNetWorth.innerText=money(m.netWorth);kCloseValue.innerText=money(m.closeValue);netWorthCard.className='card netCard '+(m.netWorth>=0?'positive':'negative');kNetWorth.className=m.netWorth>=0?'ok':'danger';netExplanation.innerHTML=`Net Worth = Money (${money(m.moneyTotal)}) + Inventory Cost (${money(m.stockCost)}) + Assets (${money(m.assets)}) - Debts (${money(m.debt)}).`;let t=today(),ts=db.sales.filter(x=>x.date===t).reduce((a,inv)=>a+(inv.lines||[]).reduce((b,l)=>b+l.qty*l.price,0),0),te=db.expenses.filter(x=>x.date===t).reduce((a,e)=>a+Number(e.amount),0);todaySummary.innerHTML=`<p>Today sales: <b>${money(ts)}</b></p><p>Today expenses: <b>${money(te)}</b></p><p>Total products: <b>${db.products.length}</b></p><p>Total stock qty: <b>${m.totalQty}</b></p><p>Open Affirm total balance: <b>${money(m.debt)}</b></p>`}
+function renderTrash(){trashTable.innerHTML='<tr><th>Deleted At</th><th>Type</th><th>Record</th><th>Action</th></tr>'+(db.trash||[]).slice().reverse().map(t=>`<tr><td>${t.deletedAt}</td><td>${t.type}</td><td>${(t.record?.no||t.record?.name||t.record?.cat||t.record?.id||'Record')}</td><td><button class="btn green" onclick="restoreTrash('${t.id}')">Restore</button> <button class="btn red" onclick="deleteTrash('${t.id}')">Delete Forever</button></td></tr>`).join('')}
+function exportData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='business-backup.json';a.click()}
+function importData(ev){let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{db=normalize(JSON.parse(r.result));save();alert('Backup imported successfully. Dashboard updated.')}catch(e){alert('Invalid backup file')}};r.readAsText(f)}
+function resetAll(){if(confirm('WARNING: This deletes all saved data on this browser. Export Backup first. Continue?')){let x=prompt('Type DELETE to confirm reset all data');if(x==='DELETE'){localStorage.removeItem(KEY);location.reload()}else alert('Reset cancelled')}}
+function renderAll(){[purProduct,saleProduct,rProduct,adjProduct].forEach((sel,i)=>productOptions(sel,i===2));fillSalePrice();purchaseNo.innerText='P-'+String(db.seq.P).padStart(5,'0');saleNo.innerText='S-'+String(db.seq.S).padStart(5,'0');renderProducts();renderHistory();renderStockHistory();renderCashBank();renderAffirm();renderAssets();renderDashboard();renderReports();renderLowStock();renderCharts();renderTrash()}
+[purDate,saleDate,exDate,rStart,rEnd,trDate,afDate,asDate,chDate].forEach(x=>{if(x&&!x.value)x.value=today()});renderAll();setStatus('Ready — saved data loaded from this browser');
+</script>
+</body>
+</html>
