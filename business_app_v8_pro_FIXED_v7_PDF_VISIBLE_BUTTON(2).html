@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Small Business Accounting & Stock - Net Worth Dashboard</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#1f2937;--muted:#6b7280;--main:#2563eb;--red:#dc2626;--green:#16a34a;--border:#e5e7eb;--amber:#d97706}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;padding:18px 14px;position:sticky;top:0;z-index:2}
+header h1{font-size:20px;margin:0 0 6px} header p{margin:0;font-size:13px;opacity:.9}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;background:#fff;position:sticky;top:82px;z-index:2;border-bottom:1px solid var(--border)}
+nav button,.btn{border:0;border-radius:12px;background:#e8efff;color:#1d4ed8;padding:10px 8px;font-weight:700;font-size:13px}
+nav button.active,.btn.primary{background:var(--main);color:#fff}.btn.red{background:#fee2e2;color:#991b1b}.btn.green{background:#dcfce7;color:#166534}.btn.gray{background:#f3f4f6;color:#374151}.btn.amber{background:#fef3c7;color:#92400e}
+main{padding:12px;max-width:1100px;margin:auto}.page{display:none}.page.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px #0000000d}
+h2{font-size:18px;margin:0 0 10px} h3{font-size:15px;margin:10px 0}.grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:850px){.grid.two{grid-template-columns:1fr 1fr}.grid.three{grid-template-columns:repeat(3,1fr)}.grid.four{grid-template-columns:repeat(4,1fr)}nav{grid-template-columns:repeat(12,1fr);top:74px}}
+label{font-size:12px;color:var(--muted);font-weight:700} input,select,textarea{width:100%;padding:11px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:16px}
+textarea{min-height:70px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.small{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid var(--border);padding:8px;text-align:left;vertical-align:top} th{color:var(--muted);font-size:12px}
+.kpi{padding:12px;border-radius:14px;background:#f8fafc;border:1px solid var(--border)}.kpi b{display:block;font-size:18px;margin-top:4px}.kpi.big b{font-size:24px}
+.badge{display:inline-block;border-radius:999px;padding:3px 8px;font-size:12px;background:#eef2ff;color:#3730a3}.danger{color:var(--red)}.ok{color:var(--green)}.amberText{color:var(--amber)}
+img.thumb{width:48px;height:48px;object-fit:cover;border-radius:10px;background:#f3f4f6}
+.invoiceBox{border:1px dashed var(--border);border-radius:14px;padding:10px;margin-top:8px}.right{text-align:right}
+.netCard{border:2px solid var(--border)}.netCard.positive{border-color:#86efac;background:#f0fdf4}.netCard.negative{border-color:#fca5a5;background:#fef2f2}
+canvas{width:100%;max-height:260px;border:1px solid var(--border);border-radius:14px;background:#fff;margin-top:8px}.warnBox{border-left:5px solid #d97706;background:#fffbeb}.editMark{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:8px;margin:6px 0;color:#92400e;font-weight:700}
+
+.stockCards{display:none}
+.stockItem{border:1px solid var(--border);border-radius:14px;padding:12px;margin:10px 0;background:#fff}
+.stockItem h3{margin:0 0 6px;font-size:16px}
+.stockMeta{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px}
+.stockMeta div{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:7px}
+@media(max-width:700px){.desktopStockTable{display:none}.stockCards{display:block}}
+
+
+.dashTitle{font-size:15px;color:#374151;margin:4px 0 10px;font-weight:800}
+.dashGroup{border-left:5px solid var(--main)}
+.dashGroup.money{border-left-color:#16a34a}
+.dashGroup.stock{border-left-color:#2563eb}
+.dashGroup.debt{border-left-color:#dc2626}
+.dashGroup.profit{border-left-color:#d97706}
+.kpi .hint{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.summaryLine{display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:7px 0}
+.summaryLine b{font-size:16px}
+
+
+.logoBox{max-width:90px;max-height:90px;object-fit:contain}
+.proBox{border:1px solid var(--border);border-radius:14px;padding:10px;background:#fff;margin:8px 0}
+.actionMini{display:flex;gap:6px;flex-wrap:wrap}
+.actionMini .btn{padding:7px 8px;font-size:12px}
+
+
+
+/* iPhone Documents fallback panel for PDF/Export */
+#iosPanel{display:none;position:fixed;inset:0;background:#0008;z-index:9999;padding:12px;overflow:auto}
+#iosPanel .box{background:#fff;border-radius:16px;padding:12px;max-width:980px;margin:20px auto;color:#111}
+#iosPanel textarea{width:100%;height:280px;font-family:monospace;font-size:12px}
+@media print{body.printMode header,body.printMode nav,body.printMode main{display:none!important}body.printMode #iosPanel{display:block!important;position:static;background:#fff;padding:0}body.printMode #iosPanel .box{box-shadow:none;margin:0;max-width:none}body.printMode #iosPanel .noPrint{display:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Small Business Accounting & Stock</h1>
+  <p>V8 PRO FIXED v4: Delete works with one tap, no blocked popup confirmations.</p>
+</header>
+<nav id="tabs">
+<button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
+<button onclick="showPage('products',this)">Products</button>
+<button onclick="showPage('stocklist',this)">Stock List</button>
+<button onclick="showPage('purchase',this)">Purchase</button>
+<button onclick="showPage('sale',this)">Sale</button>
+<button onclick="showPage('expenses',this)">Expenses</button>
+<button onclick="showPage('cashbank',this)">Cash/Bank</button>
+<button onclick="showPage('affirm',this)">Affirm</button>
+<button onclick="showPage('assets',this)">Assets/Tools</button>
+<button onclick="showPage('reports',this)">Reports</button>
+<button onclick="showPage('trash',this)">Trash</button>
+<button onclick="showPage('settings',this)">Settings</button>
+</nav>
+<main>
+<div id="iosPanel"><div class="box"><div class="noPrint row"><button class="btn red" onclick="closeIOSPanel()">Close</button><button class="btn primary" onclick="printIOSPanel()">Print / Save PDF</button><button class="btn green" onclick="copyIOSPanel()">Copy</button></div><div id="iosPanelContent"></div></div></div>
+
+<section id="dashboard" class="page active">
+ <div class="card netCard" id="netWorthCard">
+  <h2>Business Health / İşletme Durumu</h2>
+  <div class="grid four">
+   <div class="kpi big">Net Worth<br><b id="kNetWorth">$0.00</b><span class="hint">Cash + Stock + Tools - Debt</span></div>
+   <div class="kpi big">Today Sales<br><b id="kTodaySales">$0.00</b><span class="hint">Bugünkü satış</span></div>
+   <div class="kpi big">Net Profit<br><b id="kNetProfit">$0.00</b><span class="hint">Profit - Expenses</span></div>
+   <div class="kpi big">Stock Qty<br><b id="kTotalQty">0</b><span class="hint">Toplam eldeki ürün</span></div>
+  </div>
+  <div id="netExplanation" class="small" style="margin-top:8px"></div>
+ </div>
+
+ <div class="card dashGroup money"><h2>1) Money / Para</h2>
+  <div class="grid four">
+   <div class="kpi">Cash Register <b id="kCash">$0.00</b><span class="hint">Kasadaki para</span></div>
+   <div class="kpi">Bank Balance <b id="kBank">$0.00</b><span class="hint">Banka</span></div>
+   <div class="kpi">Card / Other <b id="kCard">$0.00</b><span class="hint">Kart / diğer</span></div>
+   <div class="kpi">Total Money <b id="kMoney">$0.00</b><span class="hint">Toplam nakit</span></div>
+  </div>
+ </div>
+
+ <div class="card dashGroup stock"><h2>2) Inventory / Stok</h2>
+  <div class="grid four">
+   <div class="kpi">Inventory Cost <b id="kStock">$0.00</b><span class="hint">Maliyete göre stok değeri</span></div>
+   <div class="kpi">Inventory Sale Value <b id="kStockSale">$0.00</b><span class="hint">Satarsan toplam değer</span></div>
+   <div class="kpi">Potential Profit <b id="kPotential">$0.00</b><span class="hint">Stok satılırsa tahmini kâr</span></div>
+   <div class="kpi">Assets / Tools <b id="kAssets">$0.00</b><span class="hint">Demirbaş / ekipman</span></div>
+  </div>
+ </div>
+
+ <div class="card dashGroup debt"><h2>3) Debt / Borç</h2>
+  <div class="grid four">
+   <div class="kpi">Affirm Principal <b id="kAffirmPrincipal">$0.00</b><span class="hint">Ana borç</span></div>
+   <div class="kpi">Affirm Extra <b id="kAffirmExtra">$0.00</b><span class="hint">Faiz / ek ücret</span></div>
+   <div class="kpi">Total Debt <b id="kAffirm">$0.00</b><span class="hint">Toplam borç</span></div>
+   <div class="kpi">If Sold at List Price <b id="kCloseValue">$0.00</b><span class="hint">Stok satılırsa net durum</span></div>
+  </div>
+ </div>
+
+ <div class="card dashGroup profit"><h2>4) Profit / Kâr</h2>
+  <div class="grid three">
+   <div class="kpi">Sales Profit <b id="kProfit">$0.00</b><span class="hint">Satıştan gelen brüt kâr</span></div>
+   <div class="kpi">Expenses <b id="kExpense">$0.00</b><span class="hint">Giderler</span></div>
+   <div class="kpi">Net After Expenses <b id="kNetProfit2">$0.00</b><span class="hint">Gerçek net kâr</span></div>
+  </div>
+ </div>
+
+
+ <div class="grid three">
+  <div class="card"><h2>Top Selling Products</h2><div id="topSellingBox"></div></div>
+  <div class="card"><h2>Most Profitable Products</h2><div id="topProfitBox"></div></div>
+  <div class="card"><h2>Category Sales</h2><div id="categorySalesBox"></div></div>
+ </div>
+
+ <div class="card warnBox"><h2>Low Stock Warning</h2><div id="lowStockBox"></div></div>
+ <div class="card"><h2>Profit & Sales Chart</h2><canvas id="profitChart" width="900" height="260"></canvas></div>
+ <div class="card"><h2>Today Summary</h2><div id="todaySummary"></div></div>
+ <div class="card"><h2>Backup / Restore</h2>
+  <p class="small">Your old <b>business-backup.json</b> will import here. First open this HTML, then press Import Backup and choose your JSON file.</p><p id="saveStatus" class="small"><b>Save status:</b> Ready</p>
+  <div class="row"><button class="btn green" onclick="save()">Save Now</button><button class="btn primary" onclick="exportData()">Export Backup</button><button class="btn gray" onclick="document.getElementById('importFile').click()">Import Backup</button><button class="btn gray" onclick="importBackupFromText()">Import Text</button><button class="btn red" onclick="resetAll()">Reset All</button></div>
+  <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(event)">
+ </div>
+</section>
+
+<section id="products" class="page">
+ <div class="card"><h2>Add / Update Product</h2>
+  <input type="hidden" id="pEdit">
+  <div class="grid two">
+   <div><label>Product Code / SKU</label><input id="pCode" placeholder="Example: CHAIR-BLACK-01"></div>
+   <div><label>Product Name</label><input id="pName" placeholder="Example: Dining Chair"></div>
+   <div><label>Category</label><input id="pCat" placeholder="Furniture, Electronics..."></div>
+   <div><label>Color / Variant</label><input id="pVariant" placeholder="Black, White, Large..."></div>
+   <div><label>Default Sale Price</label><input id="pSale" type="number" step="0.01"></div><div><label>Minimum Stock Warning</label><input id="pMin" type="number" step="1" value="1"></div>
+   <div><label>Product Photo</label><input id="pPhoto" type="file" accept="image/*" onchange="loadPhoto(event)"></div>
+  </div>
+  <input type="hidden" id="pPhotoData">
+  <div class="row" style="margin-top:10px"><button class="btn primary" onclick="saveProduct()">Save Product</button><button class="btn gray" onclick="clearProductForm()">Clear</button></div>
+ </div>
+
+ <div class="card"><h2>Bulk Product Entry / Çoklu Ürün Girişi</h2>
+  <p class="small">Paste lines like: <b>Code, Name, Category, Color, Sale Price</b><br>Example: CT001, Coffee Table, Coffee Tables, Brown, 99</p>
+  <textarea id="bulkProducts" placeholder="CT001, Coffee Table, Coffee Tables, Brown, 99&#10;NS001, Nightstand, Nightstands, White, 85"></textarea>
+  <button class="btn green" style="margin-top:8px" onclick="importBulkProducts()">Import Products</button>
+  <p id="bulkResult" class="small"></p>
+ </div>
+
+ <div class="card"><h2>Product List / Stock</h2><div class="grid two"><input id="productSearch" placeholder="Search product, code, category..." oninput="renderProducts()"><select id="productCategoryFilter" onchange="renderProducts()"><option value="">All Categories</option></select></div><div style="overflow:auto"><table id="productsTable"></table></div></div>
+ <div class="card"><h2>Manual Stock Adjustment</h2>
+  <p class="small">Positive number adds stock, negative number removes stock. It will not allow negative stock.</p>
+  <div class="grid three"><div><label>Product</label><select id="adjProduct"></select></div><div><label>Qty Adjustment</label><input id="adjQty" type="number" step="1"></div><div><label>Reason</label><input id="adjReason"></div></div>
+  <button class="btn primary" style="margin-top:8px" onclick="saveAdjustment()">Save Stock Adjustment</button>
+ </div>
+ <div class="card"><h2>Stock Movement History</h2><div style="overflow:auto"><table id="stockHistory"></table></div></div>
+</section>
+
+
+<section id="stocklist" class="page">
+ <div class="card"><h2>Stock List</h2><div class="actionMini"><button class="btn green" onclick="printStockPDF()">Stock PDF</button><button class="btn primary" onclick="exportProductsCSV()">Export CSV</button><button class="btn primary" onclick="exportProductsExcel()">Export Excel</button><button class="btn gray" onclick="document.getElementById('csvImportFile').click()">Import CSV</button></div><input type="file" id="csvImportFile" accept=".csv,text/csv" style="display:none" onchange="importProductsCSV(event)">
+  <div class="grid two">
+   <input id="stockSearch" placeholder="Search stock, code, product..." oninput="renderStockList()">
+   <select id="stockCategoryFilter" onchange="renderStockList()"><option value="">All Categories</option></select>
+  </div>
+  <div class="desktopStockTable" style="overflow:auto"><table id="stockListTable"></table></div>
+  <div id="stockListCards" class="stockCards"></div>
+ </div>
+</section>
+
+<section id="purchase" class="page">
+ <div class="card"><h2>Purchase Invoice</h2><input type="hidden" id="purEdit"><div id="purEditNote"></div><p class="small">Automatic purchase invoice number: <b id="purchaseNo"></b></p>
+  <div class="grid two"><div><label>Supplier</label><input id="purSupplier"></div><div><label>Date</label><input id="purDate" type="date"></div><div><label>Payment Method</label><select id="purPay"><option>Cash</option><option>Bank</option><option>Card</option><option>Affirm Monthly</option><option>Unpaid / Supplier Credit</option></select></div><div><label>Account</label><select id="purAccount"><option>Cash</option><option>Bank</option><option>Card</option></select></div></div>
+  <div class="invoiceBox"><div class="grid three"><div><label>Product</label><select id="purProduct"></select></div><div><label>Qty</label><input id="purQty" type="number" step="1" value="1"></div><div><label>Cost Each</label><input id="purCost" type="number" step="0.01"></div></div><button class="btn green" style="margin-top:8px" onclick="addPurchaseLine()">Add Line</button></div>
+  <table id="purLines"></table>
+  <div class="row"><button class="btn primary" onclick="savePurchase()">Save Purchase Invoice</button><button class="btn gray" onclick="cancelPurchaseEdit()">Cancel Edit</button></div>
+ </div>
+ <div class="card"><h2>Purchase History</h2><button class="btn green" onclick="printPurchasePDF()">Purchase PDF</button><div style="overflow:auto"><table id="purchaseHistory"></table></div></div>
+</section>
+
+<section id="sale" class="page">
+ <div class="card"><h2>Sales Invoice</h2><input type="hidden" id="saleEdit"><div id="saleEditNote"></div><p class="small">Automatic sales invoice number: <b id="saleNo"></b></p>
+  <div class="grid two"><div><label>Customer</label><input id="saleCustomer"></div><div><label>Date</label><input id="saleDate" type="date"></div><div><label>Payment Method</label><select id="salePay"><option>Cash</option><option>Bank</option><option>Card</option><option>Unpaid / Customer Owes</option></select></div><div><label>Account</label><select id="saleAccount"><option>Cash</option><option>Bank</option><option>Card</option></select></div></div>
+  <div class="invoiceBox"><div class="grid three"><div><label>Product</label><select id="saleProduct" onchange="fillSalePrice()"></select></div><div><label>Qty</label><input id="saleQty" type="number" step="1" value="1"></div><div><label>Sale Price Each</label><input id="salePrice" type="number" step="0.01"></div></div><button class="btn green" style="margin-top:8px" onclick="addSaleLine()">Add Line</button></div>
+  <table id="saleLines"></table>
+  <div class="row"><button class="btn primary" onclick="saveSale()">Save Sales Invoice</button><button class="btn gray" onclick="cancelSaleEdit()">Cancel Edit</button></div>
+ </div>
+ <div class="card"><h2>Sales History</h2><button class="btn green" onclick="printSalesPDF()">Sales PDF</button><div style="overflow:auto"><table id="saleHistory"></table></div></div>
+</section>
+
+<section id="expenses" class="page">
+ <div class="card"><h2>Add / Edit Expense</h2><input type="hidden" id="exEdit"><div id="exEditNote"></div>
+  <div class="grid two"><div><label>Date</label><input id="exDate" type="date"></div><div><label>Category</label><select id="exCat"><option>Rent</option><option>Phone</option><option>Internet</option><option>Fuel</option><option>Utilities</option><option>Supplies</option><option>Tool</option><option>Equipment</option><option>Other</option></select></div><div><label>Amount</label><input id="exAmount" type="number" step="0.01"></div><div><label>Pay From</label><select id="exAccount"><option>Cash</option><option>Bank</option><option>Card</option></select></div><div><label>Note</label><input id="exNote"></div></div>
+  <div class="row"><button class="btn primary" onclick="saveExpense()">Save Expense</button><button class="btn gray" onclick="cancelExpenseEdit()">Cancel Edit</button></div>
+ </div>
+ <div class="card"><h2>Expense List</h2><div style="overflow:auto"><table id="expenseTable"></table></div></div>
+</section>
+
+<section id="cashbank" class="page">
+ <div class="grid three"><div class="kpi">Cash Register <b id="cbCash">$0.00</b></div><div class="kpi">Bank <b id="cbBank">$0.00</b></div><div class="kpi">Card / Other <b id="cbCard">$0.00</b></div></div>
+ <div class="card"><h2>Transfer Between Cash / Bank</h2>
+  <div class="grid three"><div><label>Date</label><input id="trDate" type="date"></div><div><label>From</label><select id="trFrom"><option>Cash</option><option>Bank</option><option>Card</option></select></div><div><label>To</label><select id="trTo"><option>Bank</option><option>Cash</option><option>Card</option></select></div><div><label>Amount</label><input id="trAmount" type="number" step="0.01"></div><div><label>Note</label><input id="trNote"></div></div>
+  <button class="btn primary" style="margin-top:8px" onclick="saveTransfer()">Save Transfer</button>
+ </div>
+ <div class="card"><h2>Cash / Bank Ledger</h2><div style="overflow:auto"><table id="ledgerTable"></table></div></div>
+</section>
+
+<section id="affirm" class="page">
+ <div class="grid four"><div class="kpi">Affirm Principal Balance <b id="afBalance">$0.00</b></div><div class="kpi">Extra / Interest Balance <b id="afExtra">$0.00</b></div><div class="kpi">Payments Paid <b id="afPaid">$0.00</b></div><div class="kpi">Open Affirm Purchases <b id="afOpen">0</b></div></div>
+ <div class="card"><h2>Pay Affirm Monthly Payment</h2>
+  <div class="grid three"><div><label>Affirm Purchase</label><select id="afLiability"></select></div><div><label>Date</label><input id="afDate" type="date"></div><div><label>Pay From</label><select id="afAccount"><option>Bank</option><option>Cash</option><option>Card</option></select></div><div><label>Amount</label><input id="afAmount" type="number" step="0.01"></div><div><label>Note</label><input id="afNote"></div></div>
+  <button class="btn primary" style="margin-top:8px" onclick="saveAffirmPayment()">Save Affirm Payment</button>
+ </div>
+ <div class="card"><h2>Add Affirm Extra Fee / Interest</h2>
+  <div class="grid three"><div><label>Affirm Purchase</label><select id="chLiability"></select></div><div><label>Date</label><input id="chDate" type="date"></div><div><label>Extra Amount</label><input id="chAmount" type="number" step="0.01"></div><div><label>Note</label><input id="chNote" placeholder="Interest / Extra fee"></div></div>
+  <button class="btn amber" style="margin-top:8px" onclick="saveAffirmCharge()">Save Extra Fee</button>
+ </div>
+ <div class="card"><h2>Affirm Purchases / Balance</h2><div style="overflow:auto"><table id="affirmTable"></table></div></div>
+ <div class="card"><h2>Affirm Extra Fees</h2><div style="overflow:auto"><table id="chargeTable"></table></div></div>
+</section>
+
+<section id="assets" class="page">
+ <div class="card"><h2>Add / Edit Asset / Demirbaş / Tools</h2><input type="hidden" id="asEdit"><div id="asEditNote"></div>
+  <p class="small">Tools/equipment are not sale stock and will not decrease when selling products.</p>
+  <div class="grid two"><div><label>Name</label><input id="asName"></div><div><label>Category</label><select id="asCat"><option>Tools</option><option>Equipment</option><option>Furniture</option><option>Electronics</option><option>Vehicle</option><option>Other</option></select></div><div><label>Date Bought</label><input id="asDate" type="date"></div><div><label>Cost / Value</label><input id="asCost" type="number" step="0.01"></div><div><label>Payment Method</label><select id="asPay"><option>Cash</option><option>Bank</option><option>Card</option><option>Affirm Monthly</option><option>Already Owned</option></select></div><div><label>Account</label><select id="asAccount"><option>Cash</option><option>Bank</option><option>Card</option></select></div><div><label>Note</label><input id="asNote"></div></div>
+  <div class="row" style="margin-top:8px"><button class="btn primary" onclick="saveAsset()">Save Asset / Tool</button><button class="btn gray" onclick="cancelAssetEdit()">Cancel Edit</button></div>
+ </div>
+ <div class="card"><h2>Asset / Tools List</h2><div style="overflow:auto"><table id="assetTable"></table></div></div>
+</section>
+
+<section id="reports" class="page">
+ <div class="card"><h2>Reports</h2>
+  <div class="grid three"><div><label>Start Date</label><input id="rStart" type="date"></div><div><label>End Date</label><input id="rEnd" type="date"></div><div><label>Product Filter</label><select id="rProduct"></select></div></div>
+  <button class="btn primary" style="margin-top:8px" onclick="renderReports()">Run Report</button> <button class="btn green" style="margin-top:8px" onclick="printStockPDF()">Stock PDF</button> <button class="btn green" style="margin-top:8px" onclick="printReportPDF()">Report PDF</button>
+ </div>
+ <div class="grid four"><div class="kpi">Sales <b id="rSales">$0.00</b></div><div class="kpi">COGS <b id="rCogs">$0.00</b></div><div class="kpi">Expenses <b id="rExp">$0.00</b></div><div class="kpi">Net Profit <b id="rNet">$0.00</b></div></div>
+ <div class="card"><h2>Product Based Report</h2><div style="overflow:auto"><table id="productReport"></table></div><canvas id="productChart" width="900" height="260"></canvas></div>
+ <div class="card"><h2>Monthly Report</h2><div style="overflow:auto"><table id="monthlyReport"></table></div></div>
+</section>
+
+<section id="trash" class="page">
+ <div class="card"><h2>Trash / Deleted Records</h2><p class="small">Deleted sales, purchases, expenses, assets, and adjustments go here first. You can restore or permanently delete.</p><div style="overflow:auto"><table id="trashTable"></table></div></div>
+</section>
+
+<section id="settings" class="page">
+ <div class="card"><h2>Business / Invoice Settings</h2>
+  <div class="grid two">
+   <div><label>Business Name</label><input id="setBizName" placeholder="Your business name"></div>
+   <div><label>Phone</label><input id="setPhone"></div>
+   <div><label>Email</label><input id="setEmail"></div>
+   <div><label>Address</label><input id="setAddress"></div>
+   <div><label>Sales Tax %</label><input id="setTax" type="number" step="0.01" value="0"></div>
+   <div><label>Logo</label><input id="setLogoFile" type="file" accept="image/*" onchange="loadBusinessLogo(event)"></div>
+  </div>
+  <input type="hidden" id="setLogo">
+  <div id="logoPreview"></div>
+  <button class="btn primary" style="margin-top:8px" onclick="saveSettings()">Save Settings</button>
+ </div>
+ <div class="card"><h2>Export / Import</h2>
+  <div class="actionMini">
+   <button class="btn primary" onclick="exportProductsCSV()">Products CSV</button>
+   <button class="btn primary" onclick="exportProductsExcel()">Products Excel</button>
+   <button class="btn green" onclick="exportSalesCSV()">Sales CSV</button>
+   <button class="btn green" onclick="exportPurchasesCSV()">Purchases CSV</button>
+  </div>
+ </div>
+</section>
+
+</main>
+<script>
+const KEY='sb_accounting_stock_v1';
+const EMPTY_DB={products:[],purchases:[],sales:[],expenses:[],adjustments:[],transfers:[],affirmPayments:[],liabilities:[],assets:[],affirmCharges:[],trash:[],seq:{P:1,S:1,A:1}};
+let db=loadDB(), purTemp=[], saleTemp=[];
+function bindDomGlobals(){
+  document.querySelectorAll('[id]').forEach(el=>{ try{ window[el.id]=el; }catch(e){} });
+}
+function safeRun(name,fn){ try{ fn(); }catch(e){ console.error('Render error in '+name,e); setStatus('Error in '+name+': '+(e.message||e), true); } }
+
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function normalize(x){
+ x=x||{}; for(let k of Object.keys(EMPTY_DB)){if(k==='seq')continue; if(!Array.isArray(x[k]))x[k]=[]}
+ x.seq=x.seq||{}; x.seq.P=x.seq.P||1; x.seq.S=x.seq.S||1; x.seq.A=x.seq.A||1;
+ x.affirmCharges=x.affirmCharges||[]; x.trash=x.trash||[]; x.settings=x.settings||{bizName:'',phone:'',email:'',address:'',tax:0,logo:''};
+ return x;
+}
+function loadDB(){try{let raw=localStorage.getItem(KEY); return raw?normalize(JSON.parse(raw)):clone(EMPTY_DB)}catch(e){alert('Saved data could not be read. Please import backup.'); return clone(EMPTY_DB)}}
+function save(){try{const data=JSON.stringify(db);localStorage.setItem(KEY,data);if(localStorage.getItem(KEY)!==data)throw new Error('check failed');setStatus('Saved on this phone/browser ✓')}catch(e){setStatus('NOT SAVED — storage full or browser blocked storage. Export Backup now.',true);alert('WARNING: Data was NOT saved. Export Backup now. Photos may be too large.')}renderAll()}
+window.addEventListener('beforeunload',()=>{try{localStorage.setItem(KEY, JSON.stringify(db));}catch(e){}});
+function setStatus(msg,bad=false){let el=document.getElementById('saveStatus');if(el){el.innerHTML='<b>Save status:</b> '+msg;el.className=bad?'small danger':'small ok'}}
+function money(n){let v=Number(n)||0; return '$'+v.toFixed(2)}
+function today(){return new Date().toISOString().slice(0,10)}
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function showPage(p,btn){
+  bindDomGlobals();
+  let page=document.getElementById(p);
+  if(!page){alert('Page not found: '+p);return}
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  page.classList.add('active');
+  let buttons=Array.from(document.querySelectorAll('nav button'));
+  buttons.forEach(x=>x.classList.remove('active'));
+  let activeBtn=btn || buttons.find(b=>(b.getAttribute('onclick')||'').includes("'"+p+"'"));
+  if(activeBtn)activeBtn.classList.add('active');
+  renderAll();
+}
+function getProduct(pid){return db.products.find(p=>p.id===pid)}
+function productName(pid){let p=getProduct(pid);return p?(p.code+' '+p.name+' '+(p.variant||'')):'Deleted product'}
+function stockOf(pid){let q=0;db.purchases.forEach(inv=>(inv.lines||[]).forEach(l=>{if(l.pid===pid)q+=Number(l.qty)||0}));db.sales.forEach(inv=>(inv.lines||[]).forEach(l=>{if(l.pid===pid)q-=Number(l.qty)||0}));(db.adjustments||[]).forEach(a=>{if(a.pid===pid)q+=Number(a.qty)||0});return q}
+function oldSaleQtyForEdit(pid){
+ let edit=saleEdit?.value||'';
+ if(!edit)return 0;
+ let old=db.sales.find(x=>x.id===edit);
+ if(!old)return 0;
+ return (old.lines||[]).filter(l=>l.pid===pid).reduce((a,l)=>a+(Number(l.qty)||0),0);
+}
+function availableStockForSale(pid){return stockOf(pid)+oldSaleQtyForEdit(pid)}
+function avgCost(pid){let q=0,t=0;db.purchases.forEach(inv=>(inv.lines||[]).forEach(l=>{if(l.pid===pid){q+=Number(l.qty)||0;t+=(Number(l.qty)||0)*(Number(l.cost)||0)}}));return q?t/q:0}
+function productDefaultSalePrice(pid){let p=getProduct(pid);return Number(p?.sale)||0}
+function liabilityPaid(lid){return (db.affirmPayments||[]).filter(p=>p.lid===lid).reduce((a,p)=>a+(Number(p.amount)||0),0)}
+function liabilityCharges(lid){return (db.affirmCharges||[]).filter(c=>c.lid===lid).reduce((a,c)=>a+(Number(c.amount)||0),0)}
+function liabilityBalance(l){return Math.max(0,(Number(l.amount)||0)+liabilityCharges(l.id)-liabilityPaid(l.id))}
+function metrics(){
+ let b=accountBalances();
+ let stockCost=0,stockSale=0,totalQty=0;
+ db.products.forEach(p=>{let q=stockOf(p.id); if(q>0){totalQty+=q; stockCost+=q*avgCost(p.id); stockSale+=q*(Number(p.sale)||0)}})
+ let assets=(db.assets||[]).reduce((a,x)=>a+(Number(x.cost)||0),0);
+ let principal=(db.liabilities||[]).reduce((a,l)=>a+Math.max(0,(Number(l.amount)||0)-Math.min((Number(l.amount)||0),liabilityPaid(l.id))),0);
+ let extra=(db.liabilities||[]).reduce((a,l)=>a+Math.max(0,liabilityCharges(l.id)-Math.max(0,liabilityPaid(l.id)-(Number(l.amount)||0))),0);
+ let debt=(db.liabilities||[]).reduce((a,l)=>a+liabilityBalance(l),0);
+ let moneyTotal=(b.Cash||0)+(b.Bank||0)+(b.Card||0);
+ let totalAssets=moneyTotal+stockCost+assets;
+ let netWorth=totalAssets-debt;
+ let closeValue=moneyTotal+stockSale+assets-debt;
+ let salesProfit=db.sales.reduce((a,inv)=>a+(inv.lines||[]).reduce((b,l)=>b+(Number(l.qty)||0)*((Number(l.price)||0)-(Number(l.cost)||0)),0),0);
+ let exp=db.expenses.reduce((a,e)=>a+(Number(e.amount)||0),0);
+ return {b,stockCost,stockSale,totalQty,assets,principal,extra,debt,moneyTotal,totalAssets,netWorth,closeValue,salesProfit,exp,potential:stockSale-stockCost}
+}
+function loadPhoto(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{let img=new Image();img.onload=()=>{let max=700,w=img.width,h=img.height;if(w>h&&w>max){h=Math.round(h*max/w);w=max}else if(h>=w&&h>max){w=Math.round(w*max/h);h=max}let c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);pPhotoData.value=c.toDataURL('image/jpeg',0.65);setStatus('Photo compressed. Press Save Product.')};img.onerror=()=>{pPhotoData.value=r.result};img.src=r.result};r.readAsDataURL(f)}
+
+function saveProduct(){let code=pCode.value.trim(),name=pName.value.trim();if(!code||!name){alert('Product code and name required');return}let edit=pEdit.value,dupe=db.products.find(p=>p.code===code&&p.id!==edit);if(dupe){alert('This product code already exists. Use different SKU for different color.');return}let obj={id:edit||id(),code,name,cat:pCat.value.trim(),variant:pVariant.value.trim(),sale:Number(pSale.value)||0,min:Number(pMin.value)||1,photo:pPhotoData.value||''};if(edit){let i=db.products.findIndex(p=>p.id===edit);db.products[i]={...db.products[i],...obj,photo:obj.photo||db.products[i].photo}}else db.products.push(obj);clearProductForm();save()}
+function clearProductForm(){['pEdit','pCode','pName','pCat','pVariant','pSale','pMin','pPhotoData'].forEach(x=>document.getElementById(x).value='');pPhoto.value=''}
+function editProduct(pid){let p=getProduct(pid);if(!p)return;pEdit.value=p.id;pCode.value=p.code;pName.value=p.name;pCat.value=p.cat||'';pVariant.value=p.variant||'';pSale.value=p.sale||'';pPhotoData.value=p.photo||'';pMin.value=p.min||1;showPage('products',document.querySelectorAll('nav button')[1]);scrollTo(0,0)}
+function deleteProduct(pid){
+  bindDomGlobals();
+  pid=String(pid||'');
+  let p=(db.products||[]).find(x=>String(x.id)===pid);
+  if(!p){ alert('Product not found. Refresh and try again.'); renderAll(); return false; }
+  // iPhone file preview / Documents app can block confirm() popups.
+  // So Delete now moves to Trash immediately. Restore is available in Trash.
+  trashPush('products',p);
+  db.products=(db.products||[]).filter(x=>String(x.id)!==pid);
+  try{localStorage.setItem(KEY, JSON.stringify(db));}catch(e){alert('Deleted, but save failed. Export Backup now.');}
+  renderAll();
+  setStatus('Product moved to Trash ✓');
+  return true;
+}
+function productOptions(sel,all=false){if(!sel)return;let opts=all?'<option value="">All Products</option>':'';db.products.forEach(p=>opts+=`<option value="${p.id}">${p.code} - ${p.name} ${p.variant||''} (Stock: ${stockOf(p.id)})</option>`);sel.innerHTML=opts}
+function populateCategoryFilter(){let s=document.getElementById('productCategoryFilter');if(!s)return;let cats=[...new Set(db.products.map(p=>p.cat||'').filter(Boolean))].sort();s.innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
+function renderProducts(){let q=(productSearch?.value||'').toLowerCase();let cf=(document.getElementById('productCategoryFilter')?.value||'');let rows='<tr><th>Photo</th><th>Code</th><th>Name</th><th>Category</th><th>Stock</th><th>Sale Price</th><th>Avg Cost</th><th>Cost Value</th><th>Sale Value</th><th>Action</th></tr>';db.products.filter(p=>(!cf||p.cat===cf)&&((p.code+p.name+(p.cat||'')+(p.variant||'')).toLowerCase().includes(q))).forEach(p=>{let st=stockOf(p.id),ac=avgCost(p.id),sv=st*(Number(p.sale)||0);rows+=`<tr><td>${p.photo?`<img class="thumb" src="${p.photo}">`:''}</td><td><b>${p.code}</b></td><td>${p.name}<br><span class="small">${p.variant||''}</span></td><td>${p.cat||''}</td><td class="${st<1?'danger':'ok'}">${st}</td><td>${money(p.sale||0)}</td><td>${money(ac)}</td><td>${money(st*ac)}</td><td>${money(sv)}</td><td><button type="button" class="btn gray" onclick="editProduct('${p.id}')">Edit</button> <button type="button" class="btn red productDeleteBtn" data-pid="${p.id}">Delete</button></td></tr>`});productsTable.innerHTML=rows}
+
+
+function importBulkProducts(){
+ let raw=document.getElementById('bulkProducts').value.trim();
+ if(!raw){alert('Paste product lines first');return}
+ let added=0, skipped=[];
+ raw.split(/\n+/).forEach((line,idx)=>{
+   let parts=line.split(/\t|,/).map(x=>x.trim());
+   if(parts.length<2){skipped.push(idx+1);return}
+   let code=parts[0], name=parts[1], cat=parts[2]||'', variant=parts[3]||'', sale=Number(parts[4])||0, min=Number(parts[5])||1;
+   if(!code||!name || db.products.some(p=>p.code===code)){skipped.push(idx+1);return}
+   db.products.push({id:id(),code,name,cat,variant,sale,min,photo:''});
+   added++;
+ });
+ document.getElementById('bulkResult').innerHTML=`Added: <b>${added}</b> | Skipped: <b>${skipped.length}</b>${skipped.length?' (lines '+skipped.join(', ')+')':''}`;
+ document.getElementById('bulkProducts').value='';
+ save();
+}
+function populateAllCategoryFilters(){
+ let cats=[...new Set(db.products.map(p=>p.cat||'').filter(Boolean))].sort();
+ ['productCategoryFilter','stockCategoryFilter'].forEach(idv=>{
+   let s=document.getElementById(idv);
+   if(s)s.innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+ });
+}
+function renderStockList(){
+ let q=(document.getElementById('stockSearch')?.value||'').toLowerCase();
+ let cf=(document.getElementById('stockCategoryFilter')?.value||'');
+ let rows='<tr><th>Code</th><th>Product</th><th>Category</th><th>Color</th><th>Stock</th><th>Avg Cost</th><th>Sale Price</th><th>Min</th><th>Profit Each</th><th>Cost Value</th><th>Sale Value</th><th>Action</th></tr>';
+ let cards='';
+ db.products.filter(p=>(!cf||p.cat===cf)&&((p.code+p.name+(p.cat||'')+(p.variant||'')).toLowerCase().includes(q))).forEach(p=>{
+   let st=stockOf(p.id), ac=avgCost(p.id), sale=Number(p.sale)||0, profit=sale-ac;
+   rows+=`<tr><td><b>${p.code}</b></td><td>${p.photo?`<img class="thumb" src="${p.photo}"> `:''}${p.name}</td><td>${p.cat||''}</td><td>${p.variant||''}</td><td class="${st<1?'danger':'ok'}">${st}</td><td>${money(ac)}</td><td>${money(sale)}</td><td>${p.min||1}</td><td class="${profit>=0?'ok':'danger'}">${money(profit)}</td><td>${money(st*ac)}</td><td>${money(st*sale)}</td><td><button class="btn gray" onclick="editProduct('${p.id}')">Edit</button></td></tr>`;
+   cards+=`<div class="stockItem"><h3>${p.code} - ${p.name}</h3><p class="small">${p.cat||'No Category'} ${p.variant?'- '+p.variant:''}</p><div class="stockMeta"><div>Stock<br><b class="${st<1?'danger':'ok'}">${st}</b></div><div>Sale Price<br><b>${money(sale)}</b></div><div>Avg Cost<br><b>${money(ac)}</b></div><div>Profit Each<br><b class="${profit>=0?'ok':'danger'}">${money(profit)}</b></div><div>Cost Value<br><b>${money(st*ac)}</b></div><div>Sale Value<br><b>${money(st*sale)}</b></div></div><button class="btn gray" style="margin-top:8px" onclick="editProduct('${p.id}')">Edit</button></div>`;
+ });
+ let t=document.getElementById('stockListTable'); if(t)t.innerHTML=rows;
+ let c=document.getElementById('stockListCards'); if(c)c.innerHTML=cards||'<p class="small">No products found.</p>';
+}
+
+function addPurchaseLine(){if(!purProduct.value)return;purTemp.push({pid:purProduct.value,qty:Number(purQty.value)||1,cost:Number(purCost.value)||0});renderPurLines()}
+function renderPurLines(){let s='<tr><th>Product</th><th>Qty</th><th>Cost</th><th>Total</th><th></th></tr>';purTemp.forEach((l,i)=>s+=`<tr><td>${productName(l.pid)}</td><td>${l.qty}</td><td>${money(l.cost)}</td><td>${money(l.qty*l.cost)}</td><td><button class="btn red" onclick="purTemp.splice(${i},1);renderPurLines()">X</button></td></tr>`);purLines.innerHTML=s}
+function savePurchase(){if(!purTemp.length){alert('Add product line first');return}let total=purTemp.reduce((a,l)=>a+l.qty*l.cost,0),edit=purEdit.value,oldInv=db.purchases.find(x=>x.id===edit),no=oldInv?oldInv.no:'P-'+String(db.seq.P++).padStart(5,'0'),inv={id:edit||id(),no,supplier:purSupplier.value,date:purDate.value||today(),payment:purPay.value,account:purAccount.value,lines:purTemp};if(edit){db.purchases=db.purchases.map(x=>x.id===edit?inv:x);db.liabilities=(db.liabilities||[]).filter(x=>x.ref!==edit)}else db.purchases.push(inv);if(purPay.value==='Affirm Monthly')db.liabilities.push({id:id(),date:inv.date,source:'purchase',ref:inv.id,no:inv.no,name:'Affirm '+inv.no+' '+(inv.supplier||''),amount:total});cancelPurchaseEdit();save()}
+
+function fillSalePrice(){
+ let pid=document.getElementById("saleProduct").value;
+ if(!pid)return;
+ // Selecting a product shows the default/list price as a suggestion.
+ // You can still type any real selling price, and that typed value is what profit uses.
+ document.getElementById("salePrice").value=salePriceDefault(pid)||'';
+}
+function addSaleLine(){
+ if(!document.getElementById("saleProduct").value){alert('Select product first');return false}
+ let pid=document.getElementById("saleProduct").value;
+ let q=Number(document.getElementById("saleQty").value)||0;
+ let typedPrice=parseFloat(document.getElementById("salePrice").value);
+ if(q<=0){alert('Qty must be more than 0');return false}
+ if(!isFinite(typedPrice) || typedPrice<=0){alert('Sale Price Each must be more than 0');return false}
+ let already=saleTemp.filter(x=>x.pid===pid).reduce((a,x)=>a+(Number(x.qty)||0),0);
+ let available=availableStockForSale(pid);
+ if(q+already>available){alert('Not enough stock. Current stock: '+available);return false}
+ // REAL FIX: line price is the price typed on the Sale screen.
+ // Product default/list price is used only as a suggestion, never for profit after a line is added.
+ saleTemp.push({pid,qty:q,price:typedPrice,cost:avgCost(pid)});
+ document.getElementById("saleQty").value=1;
+ document.getElementById("salePrice").value='';
+ renderSaleLines();
+ return true;
+}
+function salePriceDefault(pid){return Number(getProduct(pid)?.sale)||0}
+function updateSaleLinePrice(i,val){
+ let v=parseFloat(val);
+ if(isFinite(v) && v>0){ saleTemp[i].price=v; renderSaleLines(); }
+}
+function updateSaleLineQty(i,val){
+ let v=parseInt(val,10);
+ if(isFinite(v) && v>0){ saleTemp[i].qty=v; renderSaleLines(); }
+}
+function renderSaleLines(){
+ let s='<tr><th>Product</th><th>Qty</th><th>REAL Sale Price Used</th><th>Total</th><th>Cost</th><th>Profit</th><th></th></tr>';
+ saleTemp.forEach((l,i)=>{
+   let q=Number(l.qty)||0, price=Number(l.price)||0, cost=Number(l.cost)||0;
+   s+=`<tr><td>${productName(l.pid)}</td><td><input type="number" step="1" value="${q}" onchange="updateSaleLineQty(${i},this.value)" style="max-width:90px"></td><td><input type="number" step="0.01" value="${price}" onchange="updateSaleLinePrice(${i},this.value)" style="max-width:120px"><br><span class="small">This exact number is used for profit.</span></td><td>${money(q*price)}</td><td>${money(q*cost)}</td><td><b>${money(q*(price-cost))}</b></td><td><button class="btn red" onclick="saleTemp.splice(${i},1);renderSaleLines()">X</button></td></tr>`
+ });
+ document.getElementById("saleLines").innerHTML=s
+}
+function validateSaleTemp(){
+ let by={};
+ saleTemp.forEach(l=>{by[l.pid]=(by[l.pid]||0)+(Number(l.qty)||0)});
+ for(let pid in by){
+   let available=availableStockForSale(pid);
+   if(by[pid]>available){alert(productName(pid)+' stock not enough. Available: '+available+', sale qty: '+by[pid]);return false}
+ }
+ return true;
+}
+function saveSale(){
+ // If user filled the sale form but forgot Add Line, add it automatically using the typed price.
+ if(!saleTemp.length && document.getElementById("saleProduct").value && Number(document.getElementById("saleQty").value)>0 && Number(document.getElementById("salePrice").value)>0){
+   if(!addSaleLine()) return;
+ }
+ // REAL FIX 2: if a line already exists and user changed Sale Price Each in the form, update that line before saving.
+ // This prevents old/default list price (example 119) from being saved when user actually typed 100.
+ if(saleTemp.length && document.getElementById("saleProduct").value && Number(document.getElementById("salePrice").value)>0){
+   let pid=document.getElementById("saleProduct").value, typed=parseFloat(document.getElementById("salePrice").value);
+   let matches=saleTemp.filter(l=>l.pid===pid);
+   if(matches.length===1 && isFinite(typed) && typed>0){ matches[0].price=typed; }
+ }
+ if(!saleTemp.length){alert('Add product line first');return}
+ if(!validateSaleTemp())return;
+ let edit=document.getElementById("saleEdit").value,oldInv=db.sales.find(x=>x.id===edit),no=oldInv?oldInv.no:'S-'+String(db.seq.S++).padStart(5,'0'),inv={id:edit||id(),no,customer:document.getElementById("saleCustomer").value,date:document.getElementById("saleDate").value||today(),payment:document.getElementById("salePay").value,account:document.getElementById("saleAccount").value,lines:clone(saleTemp)};
+ if(edit)db.sales=db.sales.map(x=>x.id===edit?inv:x);else db.sales.push(inv);
+ cancelSaleEdit();save()
+}
+function saveExpense(){if(!exAmount.value){alert('Amount required');return}let rec={id:exEdit.value||id(),date:exDate.value||today(),cat:exCat.value,amount:Number(exAmount.value)||0,account:exAccount.value,note:exNote.value};if(exEdit.value)db.expenses=db.expenses.map(x=>x.id===exEdit.value?rec:x);else db.expenses.push(rec);cancelExpenseEdit();save()}
+
+function trashPush(type,record){if(!record)return;db.trash=db.trash||[];db.trash.push({id:id(),deletedAt:new Date().toLocaleString(),type,record:clone(record)})}
+function del(type,iid){
+  let arr=db[type]||[], rec=arr.find(x=>String(x.id)===String(iid));
+  if(!rec){ alert('Record not found. Refresh and try again.'); return false; }
+  // No confirm popup: some iPhone document browsers block it. Moves to Trash, not permanent delete.
+  trashPush(type,rec);
+  db[type]=arr.filter(x=>String(x.id)!==String(iid));
+  if(type==='purchases'||type==='assets')db.liabilities=(db.liabilities||[]).filter(x=>String(x.ref)!==String(iid));
+  save();
+  setStatus('Record moved to Trash ✓');
+  return true;
+}
+function restoreTrash(tid){let t=db.trash.find(x=>x.id===tid);if(!t)return;if(!db[t.type])db[t.type]=[];db[t.type].push(t.record);db.trash=db.trash.filter(x=>x.id!==tid);save()}
+function deleteTrash(tid){
+  db.trash=(db.trash||[]).filter(x=>String(x.id)!==String(tid));
+  save();
+  setStatus('Deleted forever ✓');
+}
+
+
+function saveAdjustment(){let pid=adjProduct.value,qty=Number(adjQty.value)||0,reason=adjReason.value.trim();if(!pid){alert('Select product first');return}if(qty===0){alert('Qty cannot be 0');return}let current=stockOf(pid);if(current+qty<0){alert('This would make stock negative. Current: '+current);return}db.adjustments.push({id:id(),date:today(),pid,qty,reason});adjQty.value='';adjReason.value='';save();setStatus('Stock adjusted ✓')}
+function deleteAdjustment(iid){
+  let rec=db.adjustments.find(x=>String(x.id)===String(iid));
+  if(!rec){alert('Adjustment not found.');return false;}
+  trashPush('adjustments',rec);
+  db.adjustments=db.adjustments.filter(x=>String(x.id)!==String(iid));
+  save();
+  setStatus('Adjustment moved to Trash ✓');
+  return true;
+}
+function renderStockHistory(){let moves=[];db.purchases.forEach(inv=>(inv.lines||[]).forEach(l=>moves.push({date:inv.date,type:'Purchase '+inv.no,product:productName(l.pid),qty:Number(l.qty),note:inv.supplier||'',id:null})));db.sales.forEach(inv=>(inv.lines||[]).forEach(l=>moves.push({date:inv.date,type:'Sale '+inv.no,product:productName(l.pid),qty:-Number(l.qty),note:inv.customer||'',id:null})));db.adjustments.forEach(a=>moves.push({date:a.date,type:'Manual Adjustment',product:productName(a.pid),qty:Number(a.qty),note:a.reason||'',id:a.id}));moves.sort((a,b)=>(b.date||'').localeCompare(a.date||''));stockHistory.innerHTML='<tr><th>Date</th><th>Type</th><th>Product</th><th>Qty</th><th>Note</th><th></th></tr>'+moves.map(m=>`<tr><td>${m.date}</td><td>${m.type}</td><td>${m.product}</td><td class="${m.qty<0?'danger':'ok'}">${m.qty>0?'+':''}${m.qty}</td><td>${m.note}</td><td>${m.id?`<button class="btn red" onclick="deleteAdjustment('${m.id}')">Delete</button>`:''}</td></tr>`).join('')}
+
+function ledgerItems(){let items=[];db.sales.forEach(inv=>{let total=(inv.lines||[]).reduce((a,l)=>a+l.qty*l.price,0);if(inv.payment&&inv.payment.startsWith('Unpaid'))return;items.push({date:inv.date,account:inv.account||inv.payment||'Cash',type:'Sale',desc:inv.no+' '+(inv.customer||''),amount:total})});db.purchases.forEach(inv=>{let total=(inv.lines||[]).reduce((a,l)=>a+l.qty*l.cost,0);if(inv.payment==='Affirm Monthly'||(inv.payment&&inv.payment.startsWith('Unpaid')))return;items.push({date:inv.date,account:inv.account||inv.payment||'Cash',type:'Purchase',desc:inv.no+' '+(inv.supplier||''),amount:-total})});db.expenses.forEach(e=>items.push({date:e.date,account:e.account||'Cash',type:'Expense',desc:e.cat+' '+(e.note||''),amount:-Number(e.amount)}));db.assets.forEach(a=>{if(a.payment==='Affirm Monthly'||a.payment==='Already Owned')return;items.push({date:a.date,account:a.account||a.payment||'Cash',type:'Asset/Tool',desc:a.no+' '+a.name,amount:-Number(a.cost)})});db.affirmPayments.forEach(p=>items.push({date:p.date,account:p.account||'Bank',type:'Affirm Payment',desc:p.note||'Monthly payment',amount:-Number(p.amount)}));db.transfers.forEach(t=>{items.push({date:t.date,account:t.from,type:'Transfer Out',desc:t.note||'',amount:-Number(t.amount)});items.push({date:t.date,account:t.to,type:'Transfer In',desc:t.note||'',amount:Number(t.amount)})});return items}
+function accountBalances(){let b={Cash:0,Bank:0,Card:0};ledgerItems().forEach(x=>{if(b[x.account]===undefined)b[x.account]=0;b[x.account]+=Number(x.amount)||0});return b}
+function saveTransfer(){let amt=Number(trAmount.value)||0;if(!amt){alert('Amount required');return}if(trFrom.value===trTo.value){alert('From and To cannot be same');return}db.transfers.push({id:id(),date:trDate.value||today(),from:trFrom.value,to:trTo.value,amount:amt,note:trNote.value});trAmount.value='';trNote.value='';trDate.value=today();save()}
+function renderCashBank(){let b=accountBalances();cbCash.innerText=money(b.Cash);cbBank.innerText=money(b.Bank);cbCard.innerText=money(b.Card);let rows='<tr><th>Date</th><th>Account</th><th>Type</th><th>Description</th><th>Amount</th></tr>';ledgerItems().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).forEach(x=>rows+=`<tr><td>${x.date}</td><td>${x.account}</td><td>${x.type}</td><td>${x.desc}</td><td class="${x.amount<0?'danger':'ok'}">${money(x.amount)}</td></tr>`);ledgerTable.innerHTML=rows}
+
+function renderAffirmOptions(){let opts='';db.liabilities.filter(l=>liabilityBalance(l)>0).forEach(l=>opts+=`<option value="${l.id}">${l.name} - Balance ${money(liabilityBalance(l))}</option>`);afLiability.innerHTML=opts||'<option value="">No open Affirm balance</option>';chLiability.innerHTML=opts||'<option value="">No open Affirm balance</option>'}
+function saveAffirmPayment(){let lid=afLiability.value,amt=Number(afAmount.value)||0;if(!lid){alert('Select Affirm purchase');return}let l=db.liabilities.find(x=>x.id===lid);if(!l)return;if(!amt){alert('Amount required');return}if(amt>liabilityBalance(l)&&!confirm('Payment is more than remaining balance. Continue?'))return;db.affirmPayments.push({id:id(),lid,date:afDate.value||today(),account:afAccount.value,amount:amt,note:afNote.value||l.name});afAmount.value='';afNote.value='';afDate.value=today();save()}
+function saveAffirmCharge(){let lid=chLiability.value,amt=Number(chAmount.value)||0;if(!lid){alert('Select Affirm purchase');return}if(!amt){alert('Amount required');return}db.affirmCharges.push({id:id(),lid,date:chDate.value||today(),amount:amt,note:chNote.value||'Interest / Extra fee'});chAmount.value='';chNote.value='';chDate.value=today();save()}
+function deleteCharge(iid){
+  db.affirmCharges=db.affirmCharges.filter(x=>String(x.id)!==String(iid));
+  save();
+  setStatus('Affirm extra fee deleted ✓');
+}
+function renderAffirm(){renderAffirmOptions();let paid=db.affirmPayments.reduce((a,p)=>a+Number(p.amount),0),principal=db.liabilities.reduce((a,l)=>a+Math.max(0,(Number(l.amount)||0)-Math.min((Number(l.amount)||0),liabilityPaid(l.id))),0),extra=db.liabilities.reduce((a,l)=>a+Math.max(0,liabilityCharges(l.id)-Math.max(0,liabilityPaid(l.id)-(Number(l.amount)||0))),0);afBalance.innerText=money(principal);afExtra.innerText=money(extra);afPaid.innerText=money(paid);afOpen.innerText=db.liabilities.filter(l=>liabilityBalance(l)>0).length;affirmTable.innerHTML='<tr><th>Date</th><th>Name</th><th>Principal</th><th>Extra</th><th>Paid</th><th>Balance</th></tr>'+db.liabilities.map(l=>`<tr><td>${l.date||''}</td><td>${l.name}</td><td>${money(l.amount)}</td><td>${money(liabilityCharges(l.id))}</td><td>${money(liabilityPaid(l.id))}</td><td class="${liabilityBalance(l)>0?'danger':'ok'}">${money(liabilityBalance(l))}</td></tr>`).join('');chargeTable.innerHTML='<tr><th>Date</th><th>Affirm</th><th>Amount</th><th>Note</th><th></th></tr>'+db.affirmCharges.map(c=>{let l=db.liabilities.find(x=>x.id===c.lid);return `<tr><td>${c.date}</td><td>${l?l.name:''}</td><td>${money(c.amount)}</td><td>${c.note||''}</td><td><button class="btn red" onclick="deleteCharge('${c.id}')">Delete</button></td></tr>`}).join('')}
+
+function saveAsset(){let name=asName.value.trim(),cost=Number(asCost.value)||0;if(!name){alert('Asset/tool name required');return}let edit=asEdit.value,oldA=db.assets.find(x=>x.id===edit),no=oldA?oldA.no:'A-'+String(db.seq.A++).padStart(5,'0'),a={id:edit||id(),no,name,cat:asCat.value,date:asDate.value||today(),cost,payment:asPay.value,account:asAccount.value,note:asNote.value};if(edit){db.assets=db.assets.map(x=>x.id===edit?a:x);db.liabilities=(db.liabilities||[]).filter(x=>x.ref!==edit)}else db.assets.push(a);if(asPay.value==='Affirm Monthly')db.liabilities.push({id:id(),date:a.date,source:'asset',ref:a.id,no:a.no,name:'Affirm '+a.no+' '+a.name,amount:cost});cancelAssetEdit();save()}
+function renderAssets(){assetTable.innerHTML='<tr><th>No</th><th>Date</th><th>Name</th><th>Category</th><th>Value</th><th>Payment</th><th>Note</th><th></th></tr>'+db.assets.map(a=>`<tr><td>${a.no||''}</td><td>${a.date||''}</td><td>${a.name}</td><td>${a.cat||''}</td><td>${money(a.cost)}</td><td>${a.payment||''}</td><td>${a.note||''}</td><td><button class="btn gray" onclick="editAsset('${a.id}')">Edit</button> <button class="btn red" onclick="del('assets','${a.id}')">Delete</button></td></tr>`).join('')}
+
+function between(d,s,e){return (!s||d>=s)&&(!e||d<=e)}
+function renderReports(){let s=rStart.value,e=rEnd.value,pid=rProduct.value,sales=0,cogs=0,exp=0,prod={},monthly={};db.sales.forEach(inv=>{if(!between(inv.date,s,e))return;let m=(inv.date||'').slice(0,7);monthly[m]=monthly[m]||{sales:0,cogs:0,exp:0};(inv.lines||[]).forEach(l=>{if(pid&&l.pid!==pid)return;let rev=l.qty*l.price,cg=l.qty*l.cost;sales+=rev;cogs+=cg;monthly[m].sales+=rev;monthly[m].cogs+=cg;prod[l.pid]=prod[l.pid]||{name:productName(l.pid),qty:0,sales:0,cogs:0};prod[l.pid].qty+=l.qty;prod[l.pid].sales+=rev;prod[l.pid].cogs+=cg})});db.expenses.forEach(x=>{if(between(x.date,s,e)){exp+=Number(x.amount)||0;let m=(x.date||'').slice(0,7);monthly[m]=monthly[m]||{sales:0,cogs:0,exp:0};monthly[m].exp+=Number(x.amount)||0}});rSales.innerText=money(sales);rCogs.innerText=money(cogs);rExp.innerText=money(exp);rNet.innerText=money(sales-cogs-exp);productReport.innerHTML='<tr><th>Product</th><th>Sold Qty</th><th>Sales</th><th>COGS</th><th>Profit</th></tr>'+Object.values(prod).map(x=>`<tr><td>${x.name}</td><td>${x.qty}</td><td>${money(x.sales)}</td><td>${money(x.cogs)}</td><td>${money(x.sales-x.cogs)}</td></tr>`).join('');let pv=Object.values(prod).slice(0,8);drawSimpleChart('productChart',pv.map(x=>x.name),pv.map(x=>x.sales-x.cogs));monthlyReport.innerHTML='<tr><th>Month</th><th>Sales</th><th>COGS</th><th>Expenses</th><th>Net</th></tr>'+Object.keys(monthly).sort().map(m=>{let x=monthly[m];return `<tr><td>${m}</td><td>${money(x.sales)}</td><td>${money(x.cogs)}</td><td>${money(x.exp)}</td><td>${money(x.sales-x.cogs-x.exp)}</td></tr>`}).join('')}
+
+
+function cancelPurchaseEdit(){purEdit.value='';purEditNote.innerHTML='';purTemp=[];purSupplier.value='';purDate.value=today();renderPurLines();}
+function editPurchase(iid){let inv=db.purchases.find(x=>x.id===iid);if(!inv)return;purEdit.value=iid;purEditNote.innerHTML='<div class="editMark">Editing '+inv.no+'</div>';purSupplier.value=inv.supplier||'';purDate.value=inv.date||today();purPay.value=inv.payment||'Cash';purAccount.value=inv.account||'Cash';purTemp=clone(inv.lines||[]);renderPurLines();showPage('purchase',document.querySelectorAll('nav button')[3]);scrollTo(0,0)}
+function cancelSaleEdit(){document.getElementById("saleEdit").value='';document.getElementById("saleEditNote").innerHTML='';saleTemp=[];document.getElementById("saleCustomer").value='';document.getElementById("saleDate").value=today();renderSaleLines();}
+function editSale(iid){let inv=db.sales.find(x=>x.id===iid);if(!inv)return;document.getElementById("saleEdit").value=iid;document.getElementById("saleEditNote").innerHTML='<div class="editMark">Editing '+inv.no+'</div>';document.getElementById("saleCustomer").value=inv.customer||'';document.getElementById("saleDate").value=inv.date||today();document.getElementById("salePay").value=inv.payment||'Cash';document.getElementById("saleAccount").value=inv.account||'Cash';saleTemp=clone(inv.lines||[]);renderSaleLines();showPage('sale',document.querySelectorAll('nav button')[4]);scrollTo(0,0)}
+function cancelExpenseEdit(){exEdit.value='';exEditNote.innerHTML='';exAmount.value='';exNote.value='';exDate.value=today();}
+function editExpense(iid){let e=db.expenses.find(x=>x.id===iid);if(!e)return;exEdit.value=iid;exEditNote.innerHTML='<div class="editMark">Editing expense</div>';exDate.value=e.date||today();exCat.value=e.cat||'Other';exAmount.value=e.amount||'';exAccount.value=e.account||'Cash';exNote.value=e.note||'';showPage('expenses',document.querySelectorAll('nav button')[5]);scrollTo(0,0)}
+function cancelAssetEdit(){asEdit.value='';asEditNote.innerHTML='';asName.value='';asCost.value='';asNote.value='';asDate.value=today();}
+function editAsset(iid){let a=db.assets.find(x=>x.id===iid);if(!a)return;asEdit.value=iid;asEditNote.innerHTML='<div class="editMark">Editing '+(a.no||'asset')+'</div>';asName.value=a.name||'';asCat.value=a.cat||'Other';asDate.value=a.date||today();asCost.value=a.cost||'';asPay.value=a.payment||'Cash';asAccount.value=a.account||'Cash';asNote.value=a.note||'';showPage('assets',document.querySelectorAll('nav button')[8]);scrollTo(0,0)}
+function drawSimpleChart(canvasId, labels, values){let c=document.getElementById(canvasId);if(!c)return;let ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);ctx.font='13px Arial';ctx.fillText('No data',20,30);if(!values.length)return;ctx.clearRect(0,0,w,h);let max=Math.max(...values.map(v=>Math.abs(v)),1),barW=Math.max(18,(w-80)/values.length-8),base=h-45;ctx.beginPath();ctx.moveTo(45,15);ctx.lineTo(45,base);ctx.lineTo(w-15,base);ctx.stroke();values.forEach((v,i)=>{let x=55+i*(barW+8),bh=Math.min(base-25,Math.abs(v)/max*(base-35));ctx.fillRect(x,base-bh,barW,bh);ctx.fillText('$'+Number(v).toFixed(0),x,base-bh-5);ctx.save();ctx.translate(x,base+12);ctx.rotate(-0.5);ctx.fillText(String(labels[i]).slice(0,12),0,0);ctx.restore();});}
+function renderCharts(){let monthly={};db.sales.forEach(inv=>{let m=(inv.date||'').slice(0,7)||'No date';monthly[m]=monthly[m]||{sales:0,profit:0};(inv.lines||[]).forEach(l=>{monthly[m].sales+=Number(l.qty)*Number(l.price);monthly[m].profit+=Number(l.qty)*(Number(l.price)-Number(l.cost));})});let labs=Object.keys(monthly).sort().slice(-8);drawSimpleChart('profitChart',labs,labs.map(m=>monthly[m].profit));}
+function renderLowStock(){let lows=db.products.map(p=>({p,qty:stockOf(p.id)})).filter(x=>x.qty<=(Number(x.p.min)||1));lowStockBox.innerHTML=lows.length?lows.map(x=>`<p><b>${x.p.code}</b> ${x.p.name} ${x.p.variant||''}: <span class="danger">${x.qty}</span></p>`).join(''):'<p class="ok"><b>No low stock.</b></p>';}
+function renderHistory(){purchaseHistory.innerHTML='<tr><th>No</th><th>Date</th><th>Supplier</th><th>Payment</th><th>Total</th><th></th></tr>'+db.purchases.slice().reverse().map(inv=>`<tr><td>${inv.no}</td><td>${inv.date}</td><td>${inv.supplier||''}</td><td>${inv.payment||''}</td><td>${money((inv.lines||[]).reduce((a,l)=>a+l.qty*l.cost,0))}</td><td><button class="btn gray" onclick="editPurchase('${inv.id}')">Edit</button> <button class="btn green" onclick="printOnePurchasePDF('${inv.id}')">PDF</button> <button class="btn red" onclick="del('purchases','${inv.id}')">Delete</button></td></tr>`).join('');saleHistory.innerHTML='<tr><th>No</th><th>Date</th><th>Customer</th><th>Payment</th><th>Total</th><th>Profit</th><th></th></tr>'+db.sales.slice().reverse().map(inv=>`<tr><td>${inv.no}</td><td>${inv.date}</td><td>${inv.customer||''}</td><td>${inv.payment||''}</td><td>${money((inv.lines||[]).reduce((a,l)=>a+l.qty*l.price,0))}</td><td>${money((inv.lines||[]).reduce((a,l)=>a+l.qty*(l.price-l.cost),0))}</td><td><button class="btn gray" onclick="editSale('${inv.id}')">Edit</button> <button class="btn green" onclick="printOneSalePDF('${inv.id}')">PDF</button> <button class="btn red" onclick="del('sales','${inv.id}')">Delete</button></td></tr>`).join('');expenseTable.innerHTML='<tr><th>Date</th><th>Category</th><th>Amount</th><th>Account</th><th>Note</th><th></th></tr>'+db.expenses.slice().reverse().map(e=>`<tr><td>${e.date}</td><td>${e.cat}</td><td>${money(e.amount)}</td><td>${e.account||''}</td><td>${e.note||''}</td><td><button class="btn gray" onclick="editExpense('${e.id}')">Edit</button> <button class="btn red" onclick="del('expenses','${e.id}')">Delete</button></td></tr>`).join('')}
+
+function renderDashboard(){let m=metrics();let t=today(),ts=db.sales.filter(x=>x.date===t).reduce((a,inv)=>a+(inv.lines||[]).reduce((b,l)=>b+l.qty*l.price,0),0),te=db.expenses.filter(x=>x.date===t).reduce((a,e)=>a+Number(e.amount),0);
+kCash.innerText=money(m.b.Cash);kBank.innerText=money(m.b.Bank);kCard.innerText=money(m.b.Card);kMoney.innerText=money(m.moneyTotal);
+kStock.innerText=money(m.stockCost);kStockSale.innerText=money(m.stockSale);kPotential.innerText=money(m.potential);kTotalQty.innerText=m.totalQty;kAssets.innerText=money(m.assets);
+kAffirmPrincipal.innerText=money(m.principal);kAffirmExtra.innerText=money(m.extra);kAffirm.innerText=money(m.debt);
+kProfit.innerText=money(m.salesProfit);kExpense.innerText=money(m.exp);kNetProfit.innerText=money(m.salesProfit-m.exp);kNetProfit2.innerText=money(m.salesProfit-m.exp);
+kTodaySales.innerText=money(ts);kNetWorth.innerText=money(m.netWorth);kCloseValue.innerText=money(m.closeValue);
+netWorthCard.className='card netCard '+(m.netWorth>=0?'positive':'negative');kNetWorth.className=m.netWorth>=0?'ok':'danger';
+netExplanation.innerHTML=`<div class="summaryLine"><span>Total Assets / Varlık</span><b>${money(m.totalAssets)}</b></div><div class="summaryLine"><span>Total Debt / Borç</span><b class="danger">${money(m.debt)}</b></div><div class="summaryLine"><span>Net Worth / Net Değer</span><b class="${m.netWorth>=0?'ok':'danger'}">${money(m.netWorth)}</b></div>`;
+todaySummary.innerHTML=`<p>Today sales: <b>${money(ts)}</b></p><p>Today expenses: <b>${money(te)}</b></p><p>Total products: <b>${db.products.length}</b></p><p>Total stock qty: <b>${m.totalQty}</b></p><p>Open Affirm total balance: <b>${money(m.debt)}</b></p>`}
+function renderTrash(){trashTable.innerHTML='<tr><th>Deleted At</th><th>Type</th><th>Record</th><th>Action</th></tr>'+(db.trash||[]).slice().reverse().map(t=>`<tr><td>${t.deletedAt}</td><td>${t.type}</td><td>${(t.record?.no||t.record?.name||t.record?.cat||t.record?.id||'Record')}</td><td><button class="btn green" onclick="restoreTrash('${t.id}')">Restore</button> <button class="btn red" onclick="deleteTrash('${t.id}')">Delete Forever</button></td></tr>`).join('')}
+function showIOSPanel(title,content,isHtml=false){
+  let p=document.getElementById('iosPanel'), c=document.getElementById('iosPanelContent');
+  if(!p||!c){alert('Panel not found');return}
+  if(isHtml){c.innerHTML='<h2>'+esc(title)+'</h2>'+content}
+  else{c.innerHTML='<h2>'+esc(title)+'</h2><p class="small noPrint">iPhone Documents bazen download/export engelliyor. Aşağıdaki yazıyı kopyalayabilir veya Share/Save deneyebilirsin.</p><textarea id="iosText">'+esc(content)+'</textarea>'}
+  p.style.display='block';
+}
+function closeIOSPanel(){let p=document.getElementById('iosPanel'); if(p)p.style.display='none'; document.body.classList.remove('printMode')}
+function printIOSPanel(){document.body.classList.add('printMode');setTimeout(()=>window.print(),100)}
+function copyIOSPanel(){let t=document.getElementById('iosText'); if(t){t.focus();t.select();try{document.execCommand('copy');setStatus('Copied ✓')}catch(e){}}}
+function tryShareOrDownload(name,content,type){
+  try{
+    const blob=new Blob([content],{type:type||'text/plain'});
+    const file=new File([blob],name,{type:type||'text/plain'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(()=>{});return true}
+    let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500); return true;
+  }catch(e){return false}
+}
+function exportData(){let text=JSON.stringify(db,null,2);tryShareOrDownload('business-backup.json',text,'application/json');showIOSPanel('Export Backup - business-backup.json',text,false)}
+function importData(ev){let f=ev.target.files&&ev.target.files[0];if(!f){alert('File seçilmedi');return}let r=new FileReader();r.onload=()=>{try{db=normalize(JSON.parse(r.result));save();alert('Backup imported. Dashboard updated.')}catch(e){alert('Invalid backup file')}};r.readAsText(f)}
+function importBackupFromText(){let t=prompt('Paste business-backup.json text here');if(!t)return;try{db=normalize(JSON.parse(t));save();alert('Backup imported.')}catch(e){alert('Invalid backup text')}}
+function resetAll(){let ok=prompt('Reset için DELETE yaz');if(ok==='DELETE'){localStorage.removeItem(KEY);location.reload()}else alert('Reset cancelled')}
+
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function settings(){db.settings=db.settings||{bizName:'',phone:'',email:'',address:'',tax:0,logo:''};return db.settings}
+function loadSettingsForm(){let s=settings(); if(!document.getElementById('setBizName'))return; setBizName.value=s.bizName||'';setPhone.value=s.phone||'';setEmail.value=s.email||'';setAddress.value=s.address||'';setTax.value=s.tax||0;setLogo.value=s.logo||'';logoPreview.innerHTML=s.logo?`<img class="logoBox" src="${s.logo}">`:''}
+function saveSettings(){let s=settings();s.bizName=setBizName.value;s.phone=setPhone.value;s.email=setEmail.value;s.address=setAddress.value;s.tax=Number(setTax.value)||0;s.logo=setLogo.value;save();alert('Settings saved')}
+function loadBusinessLogo(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{setLogo.value=r.result;logoPreview.innerHTML=`<img class="logoBox" src="${r.result}">`};r.readAsDataURL(f)}
+function invoiceHead(title,no,date,partyLabel,party){
+ let s=settings();
+ return `<div style="display:flex;justify-content:space-between;gap:20px"><div>${s.logo?`<img style="max-width:90px;max-height:90px" src="${s.logo}">`:''}<h2>${esc(s.bizName||'Business')}</h2><p>${esc(s.address||'')}<br>${esc(s.phone||'')} ${esc(s.email||'')}</p></div><div style="text-align:right"><h1>${title}</h1><p><b>No:</b> ${esc(no)}<br><b>Date:</b> ${esc(date)}<br><b>${partyLabel}:</b> ${esc(party||'')}</p></div></div><hr>`;
+}
+function openPdfWindow(title,html){
+ // iPhone Documents/browser often blocks window.open(). Show PDF/print page inside the same file.
+ let css='<style>body{font-family:Arial;padding:22px;color:#111}table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f3f4f6}.right{text-align:right}.total{font-size:18px;font-weight:bold}</style>';
+ showIOSPanel(title,css+html,true);
+}
+function printOneSalePDF(iid){
+ let inv=db.sales.find(x=>x.id===iid); if(!inv)return;
+ let taxRate=Number(settings().tax)||0, sub=0;
+ let h=invoiceHead('SALES INVOICE',inv.no,inv.date,'Customer',inv.customer);
+ h+='<table><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>';
+ (inv.lines||[]).forEach(l=>{let line=l.qty*l.price;sub+=line;h+=`<tr><td>${esc(productName(l.pid))}</td><td>${l.qty}</td><td>${money(l.price)}</td><td>${money(line)}</td></tr>`});
+ let tax=sub*taxRate/100,total=sub+tax;
+ h+=`</table><p class="right">Subtotal: ${money(sub)}<br>Tax (${taxRate}%): ${money(tax)}<br><span class="total">Total: ${money(total)}</span></p>`;
+ openPdfWindow(inv.no,h);
+}
+function printOnePurchasePDF(iid){
+ let inv=db.purchases.find(x=>x.id===iid); if(!inv)return; let total=0;
+ let h=invoiceHead('PURCHASE INVOICE',inv.no,inv.date,'Supplier',inv.supplier);
+ h+='<table><tr><th>Product</th><th>Qty</th><th>Cost</th><th>Total</th></tr>';
+ (inv.lines||[]).forEach(l=>{let line=l.qty*l.cost;total+=line;h+=`<tr><td>${esc(productName(l.pid))}</td><td>${l.qty}</td><td>${money(l.cost)}</td><td>${money(line)}</td></tr>`});
+ h+=`</table><p class="right"><span class="total">Total: ${money(total)}</span></p>`;
+ openPdfWindow(inv.no,h);
+}
+function printStockPDF(){
+ let h=invoiceHead('STOCK LIST','',today(),'','');
+ h+='<table><tr><th>Code</th><th>Name</th><th>Category</th><th>Color</th><th>Stock</th><th>Avg Cost</th><th>Sale Price</th><th>Sale Value</th></tr>';
+ db.products.forEach(p=>{let st=stockOf(p.id),ac=avgCost(p.id);h+=`<tr><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td>${esc(p.cat||'')}</td><td>${esc(p.variant||'')}</td><td>${st}</td><td>${money(ac)}</td><td>${money(p.sale||0)}</td><td>${money(st*(Number(p.sale)||0))}</td></tr>`});
+ h+='</table>'; openPdfWindow('Stock List',h);
+}
+function printSalesPDF(){let h=invoiceHead('SALES REPORT','',today(),'','')+'<table><tr><th>No</th><th>Date</th><th>Customer</th><th>Total</th><th>Profit</th></tr>';db.sales.forEach(inv=>{let t=0,p=0;(inv.lines||[]).forEach(l=>{t+=l.qty*l.price;p+=l.qty*(l.price-l.cost)});h+=`<tr><td>${inv.no}</td><td>${inv.date}</td><td>${esc(inv.customer||'')}</td><td>${money(t)}</td><td>${money(p)}</td></tr>`});h+='</table>';openPdfWindow('Sales Report',h)}
+function printPurchasePDF(){let h=invoiceHead('PURCHASE REPORT','',today(),'','')+'<table><tr><th>No</th><th>Date</th><th>Supplier</th><th>Total</th></tr>';db.purchases.forEach(inv=>{let t=(inv.lines||[]).reduce((a,l)=>a+l.qty*l.cost,0);h+=`<tr><td>${inv.no}</td><td>${inv.date}</td><td>${esc(inv.supplier||'')}</td><td>${money(t)}</td></tr>`});h+='</table>';openPdfWindow('Purchase Report',h)}
+function printReportPDF(){let m=metrics();let h=invoiceHead('BUSINESS REPORT','',today(),'','')+`<p>Net Worth: <b>${money(m.netWorth)}</b></p><p>Sales Profit: <b>${money(m.salesProfit)}</b></p><p>Expenses: <b>${money(m.exp)}</b></p><p>Net Profit: <b>${money(m.salesProfit-m.exp)}</b></p><p>Stock Cost Value: <b>${money(m.stockCost)}</b></p><p>Stock Sale Value: <b>${money(m.stockSale)}</b></p><p>Debt: <b>${money(m.debt)}</b></p>`;openPdfWindow('Business Report',h)}
+function downloadFile(name,content,type='text/csv'){tryShareOrDownload(name,content,type);showIOSPanel('Export - '+name,content,false)}
+function csvCell(v){v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function exportProductsCSV(){let rows=[['Code','Name','Category','Color','Sale Price','Min Stock','Stock','Avg Cost']];db.products.forEach(p=>rows.push([p.code,p.name,p.cat||'',p.variant||'',p.sale||0,p.min||1,stockOf(p.id),avgCost(p.id).toFixed(2)]));downloadFile('products.csv',rows.map(r=>r.map(csvCell).join(',')).join('\n'))}
+function exportProductsExcel(){let html='<table><tr><th>Code</th><th>Name</th><th>Category</th><th>Color</th><th>Sale Price</th><th>Stock</th></tr>'+db.products.map(p=>`<tr><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td>${esc(p.cat||'')}</td><td>${esc(p.variant||'')}</td><td>${p.sale||0}</td><td>${stockOf(p.id)}</td></tr>`).join('')+'</table>';downloadFile('products.xls',html,'application/vnd.ms-excel')}
+function parseCSVLine(line){let out=[],cur='',q=false;for(let i=0;i<line.length;i++){let ch=line[i];if(ch=='"'&&line[i+1]=='"'){cur+='"';i++}else if(ch=='"'){q=!q}else if(ch==','&&!q){out.push(cur);cur=''}else cur+=ch}out.push(cur);return out.map(x=>x.trim())}
+function importProductsCSV(ev){let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{let lines=r.result.split(/\r?\n/).filter(Boolean);let added=0;lines.forEach((line,i)=>{let p=parseCSVLine(line);if(i==0&&p[0].toLowerCase().includes('code'))return;let code=p[0],name=p[1];if(!code||!name||db.products.some(x=>x.code===code))return;db.products.push({id:id(),code,name,cat:p[2]||'',variant:p[3]||'',sale:Number(p[4])||0,min:Number(p[5])||1,photo:''});added++});save();alert('CSV imported. Added: '+added)};r.readAsText(f)}
+function exportSalesCSV(){let rows=[['No','Date','Customer','Product','Qty','Price','Cost','Profit']];db.sales.forEach(inv=>(inv.lines||[]).forEach(l=>rows.push([inv.no,inv.date,inv.customer||'',productName(l.pid),l.qty,l.price,l.cost,(l.qty*(l.price-l.cost)).toFixed(2)])));downloadFile('sales.csv',rows.map(r=>r.map(csvCell).join(',')).join('\n'))}
+function exportPurchasesCSV(){let rows=[['No','Date','Supplier','Product','Qty','Cost','Total']];db.purchases.forEach(inv=>(inv.lines||[]).forEach(l=>rows.push([inv.no,inv.date,inv.supplier||'',productName(l.pid),l.qty,l.cost,(l.qty*l.cost).toFixed(2)])));downloadFile('purchases.csv',rows.map(r=>r.map(csvCell).join(',')).join('\n'))}
+function renderInsights(){
+ let prod={},cat={};
+ db.sales.forEach(inv=>(inv.lines||[]).forEach(l=>{let p=getProduct(l.pid),name=productName(l.pid),profit=l.qty*(l.price-l.cost),sales=l.qty*l.price;prod[l.pid]=prod[l.pid]||{name,qty:0,profit:0,sales:0};prod[l.pid].qty+=Number(l.qty)||0;prod[l.pid].profit+=profit;prod[l.pid].sales+=sales;let c=p?.cat||'No Category';cat[c]=cat[c]||{sales:0,profit:0};cat[c].sales+=sales;cat[c].profit+=profit;}));
+ let topSell=Object.values(prod).sort((a,b)=>b.qty-a.qty).slice(0,5);
+ let topProf=Object.values(prod).sort((a,b)=>b.profit-a.profit).slice(0,5);
+ let topCat=Object.entries(cat).sort((a,b)=>b[1].sales-a[1].sales).slice(0,5);
+ if(topSellingBox)topSellingBox.innerHTML=topSell.length?topSell.map(x=>`<p><b>${esc(x.name)}</b><br><span class="small">Qty: ${x.qty} | Sales: ${money(x.sales)}</span></p>`).join(''):'<p class="small">No sales yet.</p>';
+ if(topProfitBox)topProfitBox.innerHTML=topProf.length?topProf.map(x=>`<p><b>${esc(x.name)}</b><br><span class="small">Profit: ${money(x.profit)}</span></p>`).join(''):'<p class="small">No sales yet.</p>';
+ if(categorySalesBox)categorySalesBox.innerHTML=topCat.length?topCat.map(([k,x])=>`<p><b>${esc(k)}</b><br><span class="small">Sales: ${money(x.sales)} | Profit: ${money(x.profit)}</span></p>`).join(''):'<p class="small">No category sales yet.</p>';
+}
+
+function renderAll(){
+  bindDomGlobals();
+  safeRun('product options',()=>{[purProduct,saleProduct,rProduct,adjProduct].forEach((sel,i)=>productOptions(sel,i===2));});
+  safeRun('invoice numbers',()=>{purchaseNo.innerText='P-'+String(db.seq.P).padStart(5,'0');document.getElementById("saleNo").innerText='S-'+String(db.seq.S).padStart(5,'0');});
+  safeRun('categories',populateAllCategoryFilters);
+  safeRun('products',renderProducts);
+  safeRun('stock list',renderStockList);
+  safeRun('history',renderHistory);
+  safeRun('stock history',renderStockHistory);
+  safeRun('cash bank',renderCashBank);
+  safeRun('affirm',renderAffirm);
+  safeRun('assets',renderAssets);
+  safeRun('dashboard',renderDashboard);
+  safeRun('insights',renderInsights);
+  safeRun('reports',renderReports);
+  safeRun('low stock',renderLowStock);
+  safeRun('charts',renderCharts);
+  safeRun('trash',renderTrash);
+  safeRun('settings',loadSettingsForm);
+}
+document.addEventListener('click',function(e){
+  let btn=e.target.closest && e.target.closest('.productDeleteBtn');
+  if(btn){ e.preventDefault(); e.stopPropagation(); deleteProduct(btn.getAttribute('data-pid')); }
+});
+document.addEventListener('DOMContentLoaded',()=>{
+  bindDomGlobals();
+  [purDate,saleDate,exDate,rStart,rEnd,trDate,afDate,asDate,chDate].forEach(x=>{if(x&&!x.value)x.value=today()});
+  renderAll();
+  setStatus('Ready — saved data loaded from this browser');
+});
+
+
+/* ===== V6 REAL PDF FIX: no popup, no window.print required ===== */
+function pdfSafeText(v){return String(v??'').replace(/\r?\n/g,' ').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').slice(0,180)}
+function pdfEscape(v){return pdfSafeText(v).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)')}
+function makeSimplePDF(title, lines){
+  title=pdfSafeText(title||'Report');
+  lines=(lines||[]).map(pdfSafeText);
+  const perPage=42, pages=[];
+  for(let i=0;i<Math.max(lines.length,1);i+=perPage) pages.push(lines.slice(i,i+perPage));
+  const objs=[];
+  function add(s){objs.push(s);return objs.length}
+  const catalogId=add('');
+  const pagesId=add('');
+  const fontId=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const pageIds=[];
+  pages.forEach((chunk,pi)=>{
+    let y=790;
+    let content='BT\n/F1 16 Tf\n50 '+y+' Td\n('+pdfEscape(title)+') Tj\n/F1 10 Tf\n0 -20 Td\n(Generated: '+pdfEscape(new Date().toLocaleString())+') Tj\n';
+    y-=40;
+    chunk.forEach(line=>{content+='0 -16 Td\n('+pdfEscape(line)+') Tj\n'});
+    content+='\nET';
+    const streamId=add('<< /Length '+content.length+' >>\nstream\n'+content+'\nendstream');
+    const pageId=add('<< /Type /Page /Parent '+pagesId+' 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 '+fontId+' 0 R >> >> /Contents '+streamId+' 0 R >>');
+    pageIds.push(pageId);
+  });
+  objs[catalogId-1]='<< /Type /Catalog /Pages '+pagesId+' 0 R >>';
+  objs[pagesId-1]='<< /Type /Pages /Kids ['+pageIds.map(id=>id+' 0 R').join(' ')+'] /Count '+pageIds.length+' >>';
+  let pdf='%PDF-1.4\n';
+  const offsets=[0];
+  objs.forEach((obj,i)=>{offsets.push(pdf.length);pdf+=(i+1)+' 0 obj\n'+obj+'\nendobj\n'});
+  const xref=pdf.length;
+  pdf+='xref\n0 '+(objs.length+1)+'\n0000000000 65535 f \n';
+  for(let i=1;i<offsets.length;i++) pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+  pdf+='trailer\n<< /Size '+(objs.length+1)+' /Root '+catalogId+' 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+  return new Blob([pdf],{type:'application/pdf'});
+}
+async function saveRealPDF(filename,title,lines){
+  // V7: Always show something immediately, because iPhone Documents may block download/share silently.
+  try{showIOSPanel('Preparing PDF - '+filename, 'Creating PDF now...\n\nIf download is blocked, use the blue link that appears here.', false)}catch(_e){}
+  try{
+    const blob=makeSimplePDF(title,lines);
+    const url=URL.createObjectURL(blob);
+    let box=document.getElementById('iosPanel');
+    if(box){
+      box.innerHTML='<h2>'+esc(filename)+'</h2>' +
+        '<p class="small">PDF hazır. Aşağıdaki linke bas: Open PDF / Download PDF.</p>' +
+        '<p><a class="btn primary" href="'+url+'" download="'+esc(filename)+'" target="_blank">Open / Download PDF</a></p>' +
+        '<p class="small">iPhone Documents engellerse: bu HTML dosyasını Safari ile aç, sonra aynı PDF butonuna bas.</p>' +
+        '<textarea id="iosText">'+esc((lines||[]).join('\n'))+'</textarea>';
+      box.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+    const a=document.createElement('a');a.href=url;a.download=filename;a.target='_blank';document.body.appendChild(a);a.click();a.remove();
+    if(navigator.share){
+      try{
+        const file=new File([blob],filename,{type:'application/pdf'});
+        if(!navigator.canShare || navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:filename}); }
+      }catch(_e){}
+    }
+  }catch(e){
+    showIOSPanel('PDF fallback - '+filename, (lines||[]).join('\n'), false);
+  }
+}
+function invoiceLines(kind,inv,isSale){
+  let s=settings(); let out=[];
+  out.push(s.bizName||'Business'); if(s.address)out.push(s.address); if(s.phone||s.email)out.push((s.phone||'')+' '+(s.email||''));
+  out.push(''); out.push(kind+'  '+(inv.no||'')); out.push('Date: '+(inv.date||''));
+  out.push((isSale?'Customer: ':'Supplier: ')+(isSale?(inv.customer||''):(inv.supplier||''))); out.push('');
+  let total=0, profit=0;
+  (inv.lines||[]).forEach(l=>{let name=productName(l.pid), q=Number(l.qty)||0, price=Number(isSale?l.price:l.cost)||0, line=q*price; total+=line; if(isSale)profit+=q*((Number(l.price)||0)-(Number(l.cost)||0)); out.push(name+' | Qty '+q+' | '+(isSale?'Price ':'Cost ')+money(price)+' | Total '+money(line));});
+  if(isSale){let tax=(Number(settings().tax)||0)*total/100; out.push(''); out.push('Subtotal: '+money(total)); out.push('Tax: '+money(tax)); out.push('TOTAL: '+money(total+tax)); out.push('Profit: '+money(profit));}
+  else {out.push(''); out.push('TOTAL: '+money(total));}
+  return out;
+}
+function printOneSalePDF(iid){let inv=db.sales.find(x=>x.id===iid);if(!inv)return;saveRealPDF((inv.no||'sales-invoice')+'.pdf','Sales Invoice '+(inv.no||''),invoiceLines('SALES INVOICE',inv,true))}
+function printOnePurchasePDF(iid){let inv=db.purchases.find(x=>x.id===iid);if(!inv)return;saveRealPDF((inv.no||'purchase-invoice')+'.pdf','Purchase Invoice '+(inv.no||''),invoiceLines('PURCHASE INVOICE',inv,false))}
+function printStockPDF(){let out=['STOCK LIST','Date: '+today(),''];db.products.forEach(p=>{let st=stockOf(p.id), ac=avgCost(p.id), sale=Number(p.sale)||0;out.push((p.code||'')+' | '+(p.name||'')+' | '+(p.cat||'')+' | '+(p.variant||'')+' | Stock '+st+' | Avg Cost '+money(ac)+' | Sale '+money(sale)+' | Value '+money(st*sale));});saveRealPDF('stock-list.pdf','Stock List',out)}
+function printSalesPDF(){let out=['SALES REPORT','Date: '+today(),''];let grand=0, prof=0;db.sales.forEach(inv=>{let t=0,p=0;(inv.lines||[]).forEach(l=>{t+=Number(l.qty)*Number(l.price);p+=Number(l.qty)*(Number(l.price)-Number(l.cost))});grand+=t;prof+=p;out.push((inv.no||'')+' | '+(inv.date||'')+' | '+(inv.customer||'')+' | Total '+money(t)+' | Profit '+money(p));});out.push('');out.push('TOTAL SALES: '+money(grand));out.push('TOTAL PROFIT: '+money(prof));saveRealPDF('sales-report.pdf','Sales Report',out)}
+function printPurchasePDF(){let out=['PURCHASE REPORT','Date: '+today(),''];let grand=0;db.purchases.forEach(inv=>{let t=(inv.lines||[]).reduce((a,l)=>a+Number(l.qty)*Number(l.cost),0);grand+=t;out.push((inv.no||'')+' | '+(inv.date||'')+' | '+(inv.supplier||'')+' | Total '+money(t));});out.push('');out.push('TOTAL PURCHASE: '+money(grand));saveRealPDF('purchase-report.pdf','Purchase Report',out)}
+function printReportPDF(){let m=metrics();let out=['BUSINESS REPORT','Date: '+today(),'','Net Worth: '+money(m.netWorth),'Total Money: '+money(m.moneyTotal),'Stock Cost Value: '+money(m.stockCost),'Stock Sale Value: '+money(m.stockSale),'Assets/Tools: '+money(m.assets),'Debt: '+money(m.debt),'Sales Profit: '+money(m.salesProfit),'Expenses: '+money(m.exp),'Net Profit: '+money(m.salesProfit-m.exp)];saveRealPDF('business-report.pdf','Business Report',out)}
+
+</script>
+</body>
+</html>
