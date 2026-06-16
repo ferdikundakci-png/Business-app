@@ -30,7 +30,7 @@ canvas{width:100%;max-height:260px;border:1px solid var(--border);border-radius:
 <body>
 <header>
   <h1>Small Business Accounting & Stock</h1>
-  <p>Dashboard now shows Net Worth: Cash + Bank + Stock + Assets − Affirm/Debts.</p>
+  <p>V4 REAL FIX: Sales profit uses typed sale price. Edit sale stock check corrected.</p>
 </header>
 <nav id="tabs">
 <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
@@ -208,8 +208,16 @@ function showPage(p,btn){document.querySelectorAll('.page').forEach(x=>x.classLi
 function getProduct(pid){return db.products.find(p=>p.id===pid)}
 function productName(pid){let p=getProduct(pid);return p?(p.code+' '+p.name+' '+(p.variant||'')):'Deleted product'}
 function stockOf(pid){let q=0;db.purchases.forEach(inv=>(inv.lines||[]).forEach(l=>{if(l.pid===pid)q+=Number(l.qty)||0}));db.sales.forEach(inv=>(inv.lines||[]).forEach(l=>{if(l.pid===pid)q-=Number(l.qty)||0}));(db.adjustments||[]).forEach(a=>{if(a.pid===pid)q+=Number(a.qty)||0});return q}
+function oldSaleQtyForEdit(pid){
+ let edit=saleEdit?.value||'';
+ if(!edit)return 0;
+ let old=db.sales.find(x=>x.id===edit);
+ if(!old)return 0;
+ return (old.lines||[]).filter(l=>l.pid===pid).reduce((a,l)=>a+(Number(l.qty)||0),0);
+}
+function availableStockForSale(pid){return stockOf(pid)+oldSaleQtyForEdit(pid)}
 function avgCost(pid){let q=0,t=0;db.purchases.forEach(inv=>(inv.lines||[]).forEach(l=>{if(l.pid===pid){q+=Number(l.qty)||0;t+=(Number(l.qty)||0)*(Number(l.cost)||0)}}));return q?t/q:0}
-function salePrice(pid){let p=getProduct(pid);return Number(p?.sale)||0}
+function productDefaultSalePrice(pid){let p=getProduct(pid);return Number(p?.sale)||0}
 function liabilityPaid(lid){return (db.affirmPayments||[]).filter(p=>p.lid===lid).reduce((a,p)=>a+(Number(p.amount)||0),0)}
 function liabilityCharges(lid){return (db.affirmCharges||[]).filter(c=>c.lid===lid).reduce((a,c)=>a+(Number(c.amount)||0),0)}
 function liabilityBalance(l){return Math.max(0,(Number(l.amount)||0)+liabilityCharges(l.id)-liabilityPaid(l.id))}
@@ -243,35 +251,71 @@ function renderPurLines(){let s='<tr><th>Product</th><th>Qty</th><th>Cost</th><t
 function savePurchase(){if(!purTemp.length){alert('Add product line first');return}let total=purTemp.reduce((a,l)=>a+l.qty*l.cost,0),edit=purEdit.value,oldInv=db.purchases.find(x=>x.id===edit),no=oldInv?oldInv.no:'P-'+String(db.seq.P++).padStart(5,'0'),inv={id:edit||id(),no,supplier:purSupplier.value,date:purDate.value||today(),payment:purPay.value,account:purAccount.value,lines:purTemp};if(edit){db.purchases=db.purchases.map(x=>x.id===edit?inv:x);db.liabilities=(db.liabilities||[]).filter(x=>x.ref!==edit)}else db.purchases.push(inv);if(purPay.value==='Affirm Monthly')db.liabilities.push({id:id(),date:inv.date,source:'purchase',ref:inv.id,no:inv.no,name:'Affirm '+inv.no+' '+(inv.supplier||''),amount:total});cancelPurchaseEdit();save()}
 
 function fillSalePrice(){
- let pid=saleProduct.value;
- let current=Number(salePrice.value)||0;
- // When product changes, fill the field from the product default only if the field is empty.
- // The number typed by the user must always win.
- if(pid && current<=0) salePrice.value=salePriceDefault(pid)||'';
+ let pid=document.getElementById("saleProduct").value;
+ if(!pid)return;
+ // Selecting a product shows the default/list price as a suggestion.
+ // You can still type any real selling price, and that typed value is what profit uses.
+ document.getElementById("salePrice").value=salePriceDefault(pid)||'';
 }
 function addSaleLine(){
- if(!saleProduct.value){alert('Select product first');return false}
- let pid=saleProduct.value;
- let q=Number(saleQty.value)||0;
- let typedPrice=Number(salePrice.value);
+ if(!document.getElementById("saleProduct").value){alert('Select product first');return false}
+ let pid=document.getElementById("saleProduct").value;
+ let q=Number(document.getElementById("saleQty").value)||0;
+ let typedPrice=parseFloat(document.getElementById("salePrice").value);
  if(q<=0){alert('Qty must be more than 0');return false}
  if(!isFinite(typedPrice) || typedPrice<=0){alert('Sale Price Each must be more than 0');return false}
  let already=saleTemp.filter(x=>x.pid===pid).reduce((a,x)=>a+(Number(x.qty)||0),0);
- if(q+already>stockOf(pid)){alert('Not enough stock. Current stock: '+stockOf(pid));return false}
- // IMPORTANT: use the price typed in the Sale screen, not the product default/list price.
+ let available=availableStockForSale(pid);
+ if(q+already>available){alert('Not enough stock. Current stock: '+available);return false}
+ // REAL FIX: line price is the price typed on the Sale screen.
+ // Product default/list price is used only as a suggestion, never for profit after a line is added.
  saleTemp.push({pid,qty:q,price:typedPrice,cost:avgCost(pid)});
+ document.getElementById("saleQty").value=1;
+ document.getElementById("salePrice").value='';
  renderSaleLines();
  return true;
 }
 function salePriceDefault(pid){return Number(getProduct(pid)?.sale)||0}
-function renderSaleLines(){let s='<tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr>';saleTemp.forEach((l,i)=>s+=`<tr><td>${productName(l.pid)}</td><td>${l.qty}</td><td>${money(l.price)}</td><td>${money(l.qty*l.price)}</td><td><button class="btn red" onclick="saleTemp.splice(${i},1);renderSaleLines()">X</button></td></tr>`);saleLines.innerHTML=s}
+function updateSaleLinePrice(i,val){
+ let v=parseFloat(val);
+ if(isFinite(v) && v>0){ saleTemp[i].price=v; renderSaleLines(); }
+}
+function updateSaleLineQty(i,val){
+ let v=parseInt(val,10);
+ if(isFinite(v) && v>0){ saleTemp[i].qty=v; renderSaleLines(); }
+}
+function renderSaleLines(){
+ let s='<tr><th>Product</th><th>Qty</th><th>REAL Sale Price Used</th><th>Total</th><th>Cost</th><th>Profit</th><th></th></tr>';
+ saleTemp.forEach((l,i)=>{
+   let q=Number(l.qty)||0, price=Number(l.price)||0, cost=Number(l.cost)||0;
+   s+=`<tr><td>${productName(l.pid)}</td><td><input type="number" step="1" value="${q}" onchange="updateSaleLineQty(${i},this.value)" style="max-width:90px"></td><td><input type="number" step="0.01" value="${price}" onchange="updateSaleLinePrice(${i},this.value)" style="max-width:120px"><br><span class="small">This exact number is used for profit.</span></td><td>${money(q*price)}</td><td>${money(q*cost)}</td><td><b>${money(q*(price-cost))}</b></td><td><button class="btn red" onclick="saleTemp.splice(${i},1);renderSaleLines()">X</button></td></tr>`
+ });
+ document.getElementById("saleLines").innerHTML=s
+}
+function validateSaleTemp(){
+ let by={};
+ saleTemp.forEach(l=>{by[l.pid]=(by[l.pid]||0)+(Number(l.qty)||0)});
+ for(let pid in by){
+   let available=availableStockForSale(pid);
+   if(by[pid]>available){alert(productName(pid)+' stock not enough. Available: '+available+', sale qty: '+by[pid]);return false}
+ }
+ return true;
+}
 function saveSale(){
- // If user filled the sale form but forgot Add Line, add it automatically.
- if(!saleTemp.length && saleProduct.value && Number(saleQty.value)>0 && Number(salePrice.value)>0){
+ // If user filled the sale form but forgot Add Line, add it automatically using the typed price.
+ if(!saleTemp.length && document.getElementById("saleProduct").value && Number(document.getElementById("saleQty").value)>0 && Number(document.getElementById("salePrice").value)>0){
    if(!addSaleLine()) return;
  }
+ // REAL FIX 2: if a line already exists and user changed Sale Price Each in the form, update that line before saving.
+ // This prevents old/default list price (example 119) from being saved when user actually typed 100.
+ if(saleTemp.length && document.getElementById("saleProduct").value && Number(document.getElementById("salePrice").value)>0){
+   let pid=document.getElementById("saleProduct").value, typed=parseFloat(document.getElementById("salePrice").value);
+   let matches=saleTemp.filter(l=>l.pid===pid);
+   if(matches.length===1 && isFinite(typed) && typed>0){ matches[0].price=typed; }
+ }
  if(!saleTemp.length){alert('Add product line first');return}
- let edit=saleEdit.value,oldInv=db.sales.find(x=>x.id===edit),no=oldInv?oldInv.no:'S-'+String(db.seq.S++).padStart(5,'0'),inv={id:edit||id(),no,customer:saleCustomer.value,date:saleDate.value||today(),payment:salePay.value,account:saleAccount.value,lines:saleTemp};
+ if(!validateSaleTemp())return;
+ let edit=document.getElementById("saleEdit").value,oldInv=db.sales.find(x=>x.id===edit),no=oldInv?oldInv.no:'S-'+String(db.seq.S++).padStart(5,'0'),inv={id:edit||id(),no,customer:document.getElementById("saleCustomer").value,date:document.getElementById("saleDate").value||today(),payment:document.getElementById("salePay").value,account:document.getElementById("saleAccount").value,lines:clone(saleTemp)};
  if(edit)db.sales=db.sales.map(x=>x.id===edit?inv:x);else db.sales.push(inv);
  cancelSaleEdit();save()
 }
@@ -306,8 +350,8 @@ function renderReports(){let s=rStart.value,e=rEnd.value,pid=rProduct.value,sale
 
 function cancelPurchaseEdit(){purEdit.value='';purEditNote.innerHTML='';purTemp=[];purSupplier.value='';purDate.value=today();renderPurLines();}
 function editPurchase(iid){let inv=db.purchases.find(x=>x.id===iid);if(!inv)return;purEdit.value=iid;purEditNote.innerHTML='<div class="editMark">Editing '+inv.no+'</div>';purSupplier.value=inv.supplier||'';purDate.value=inv.date||today();purPay.value=inv.payment||'Cash';purAccount.value=inv.account||'Cash';purTemp=clone(inv.lines||[]);renderPurLines();showPage('purchase',document.querySelectorAll('nav button')[2]);scrollTo(0,0)}
-function cancelSaleEdit(){saleEdit.value='';saleEditNote.innerHTML='';saleTemp=[];saleCustomer.value='';saleDate.value=today();renderSaleLines();}
-function editSale(iid){let inv=db.sales.find(x=>x.id===iid);if(!inv)return;saleEdit.value=iid;saleEditNote.innerHTML='<div class="editMark">Editing '+inv.no+'</div>';saleCustomer.value=inv.customer||'';saleDate.value=inv.date||today();salePay.value=inv.payment||'Cash';saleAccount.value=inv.account||'Cash';saleTemp=clone(inv.lines||[]);renderSaleLines();showPage('sale',document.querySelectorAll('nav button')[3]);scrollTo(0,0)}
+function cancelSaleEdit(){document.getElementById("saleEdit").value='';document.getElementById("saleEditNote").innerHTML='';saleTemp=[];document.getElementById("saleCustomer").value='';document.getElementById("saleDate").value=today();renderSaleLines();}
+function editSale(iid){let inv=db.sales.find(x=>x.id===iid);if(!inv)return;document.getElementById("saleEdit").value=iid;document.getElementById("saleEditNote").innerHTML='<div class="editMark">Editing '+inv.no+'</div>';document.getElementById("saleCustomer").value=inv.customer||'';document.getElementById("saleDate").value=inv.date||today();document.getElementById("salePay").value=inv.payment||'Cash';document.getElementById("saleAccount").value=inv.account||'Cash';saleTemp=clone(inv.lines||[]);renderSaleLines();showPage('sale',document.querySelectorAll('nav button')[3]);scrollTo(0,0)}
 function cancelExpenseEdit(){exEdit.value='';exEditNote.innerHTML='';exAmount.value='';exNote.value='';exDate.value=today();}
 function editExpense(iid){let e=db.expenses.find(x=>x.id===iid);if(!e)return;exEdit.value=iid;exEditNote.innerHTML='<div class="editMark">Editing expense</div>';exDate.value=e.date||today();exCat.value=e.cat||'Other';exAmount.value=e.amount||'';exAccount.value=e.account||'Cash';exNote.value=e.note||'';showPage('expenses',document.querySelectorAll('nav button')[4]);scrollTo(0,0)}
 function cancelAssetEdit(){asEdit.value='';asEditNote.innerHTML='';asName.value='';asCost.value='';asNote.value='';asDate.value=today();}
@@ -322,7 +366,7 @@ function renderTrash(){trashTable.innerHTML='<tr><th>Deleted At</th><th>Type</th
 function exportData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='business-backup.json';a.click()}
 function importData(ev){let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{db=normalize(JSON.parse(r.result));save();alert('Backup imported successfully. Dashboard updated.')}catch(e){alert('Invalid backup file')}};r.readAsText(f)}
 function resetAll(){if(confirm('WARNING: This deletes all saved data on this browser. Export Backup first. Continue?')){let x=prompt('Type DELETE to confirm reset all data');if(x==='DELETE'){localStorage.removeItem(KEY);location.reload()}else alert('Reset cancelled')}}
-function renderAll(){[purProduct,saleProduct,rProduct,adjProduct].forEach((sel,i)=>productOptions(sel,i===2));fillSalePrice();purchaseNo.innerText='P-'+String(db.seq.P).padStart(5,'0');saleNo.innerText='S-'+String(db.seq.S).padStart(5,'0');renderProducts();renderHistory();renderStockHistory();renderCashBank();renderAffirm();renderAssets();renderDashboard();renderReports();renderLowStock();renderCharts();renderTrash()}
+function renderAll(){[purProduct,saleProduct,rProduct,adjProduct].forEach((sel,i)=>productOptions(sel,i===2));purchaseNo.innerText='P-'+String(db.seq.P).padStart(5,'0');document.getElementById("saleNo").innerText='S-'+String(db.seq.S).padStart(5,'0');renderProducts();renderHistory();renderStockHistory();renderCashBank();renderAffirm();renderAssets();renderDashboard();renderReports();renderLowStock();renderCharts();renderTrash()}
 [purDate,saleDate,exDate,rStart,rEnd,trDate,afDate,asDate,chDate].forEach(x=>{if(x&&!x.value)x.value=today()});renderAll();setStatus('Ready — saved data loaded from this browser');
 </script>
 </body>
